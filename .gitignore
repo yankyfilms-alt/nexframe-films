@@ -1,0 +1,12 @@
+.env
+.env.local
+.env.*.local
+node_modules/
+dist/
+data/
+backups/
+BACKUPS/
+*.log
+API Key MUAPI UNIVERSAL.json
+*API*KEY*.json
+*api*key*.json

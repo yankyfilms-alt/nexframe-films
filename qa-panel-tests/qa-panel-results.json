@@ -1,0 +1,717 @@
+[
+  {
+    "panel": "Image Studio",
+    "requested": "1 imagen",
+    "body": {
+      "studio": "image",
+      "model": "nano-banana",
+      "input": {
+        "prompt": "perro volando sobre una ciudad al atardecer",
+        "aspect_ratio": "1:1"
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853013111_14d75827c670261b",
+        "remoteRequestId": "f14c6aa0-bcda-44eb-b7f7-2b1f7da2fd81",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "nano-banana",
+        "endpoint": "nano-banana",
+        "studio": "image",
+        "input": {
+          "prompt": "perro volando sobre una ciudad al atardecer",
+          "aspect_ratio": "1:1"
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:13.111Z"
+      },
+      "remote": {
+        "request_id": "f14c6aa0-bcda-44eb-b7f7-2b1f7da2fd81",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "perro volando sobre una ciudad al atardecer",
+        "aspect_ratio": "1:1"
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853013111_14d75827c670261b",
+        "remoteRequestId": "f14c6aa0-bcda-44eb-b7f7-2b1f7da2fd81",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "nano-banana",
+        "endpoint": "nano-banana",
+        "studio": "image",
+        "input": {
+          "prompt": "perro volando sobre una ciudad al atardecer",
+          "aspect_ratio": "1:1"
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/bef968307ea442b7bcf8dbeb908692d6.jpg"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:13.111Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\image-studio-perro-volando.jpg"
+  },
+  {
+    "panel": "Flyer Studio",
+    "requested": "1 imagen",
+    "body": {
+      "studio": "flyer",
+      "model": "nano-banana",
+      "input": {
+        "prompt": "flyer cinematografico profesional de NEXFRAME FILMS, logo rojo y dorado, fondo de estudio de cine futurista, texto limpio sin errores",
+        "aspect_ratio": "4:5"
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853029373_dfa69f09b6a016b2",
+        "remoteRequestId": "a8edc8cf-69c7-48df-bded-7f5af48dd749",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "nano-banana",
+        "endpoint": "nano-banana",
+        "studio": "flyer",
+        "input": {
+          "prompt": "flyer cinematografico profesional de NEXFRAME FILMS, logo rojo y dorado, fondo de estudio de cine futurista, texto limpio sin errores",
+          "aspect_ratio": "4:5"
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:29.373Z"
+      },
+      "remote": {
+        "request_id": "a8edc8cf-69c7-48df-bded-7f5af48dd749",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "flyer cinematografico profesional de NEXFRAME FILMS, logo rojo y dorado, fondo de estudio de cine futurista, texto limpio sin errores",
+        "aspect_ratio": "4:5"
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853029373_dfa69f09b6a016b2",
+        "remoteRequestId": "a8edc8cf-69c7-48df-bded-7f5af48dd749",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "nano-banana",
+        "endpoint": "nano-banana",
+        "studio": "flyer",
+        "input": {
+          "prompt": "flyer cinematografico profesional de NEXFRAME FILMS, logo rojo y dorado, fondo de estudio de cine futurista, texto limpio sin errores",
+          "aspect_ratio": "4:5"
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/863da9bb98894432a0f6f0664915ab9c.jpg"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.03,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:29.373Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\flyer-studio-test.jpg"
+  },
+  {
+    "panel": "Sound Studio",
+    "requested": "1 audio de 20 segundos",
+    "body": {
+      "studio": "sound",
+      "model": "mmaudio-v2-text-to-audio",
+      "input": {
+        "prompt": "20 second cinematic dark orchestral tension bed with deep pulses, soft rises and no vocals",
+        "duration": 20
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853045586_e1aad64beda8e205",
+        "remoteRequestId": "849f0beb-df8e-4a4e-93bc-0a385113c699",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "mmaudio-v2-text-to-audio",
+        "endpoint": "mmaudio-v2/text-to-audio",
+        "studio": "sound",
+        "input": {
+          "prompt": "20 second cinematic dark orchestral tension bed with deep pulses, soft rises and no vocals",
+          "duration": 20
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.02,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:45.587Z"
+      },
+      "remote": {
+        "request_id": "849f0beb-df8e-4a4e-93bc-0a385113c699",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.02,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "20 second cinematic dark orchestral tension bed with deep pulses, soft rises and no vocals",
+        "duration": 20
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853045586_e1aad64beda8e205",
+        "remoteRequestId": "849f0beb-df8e-4a4e-93bc-0a385113c699",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "mmaudio-v2-text-to-audio",
+        "endpoint": "mmaudio-v2/text-to-audio",
+        "studio": "sound",
+        "input": {
+          "prompt": "20 second cinematic dark orchestral tension bed with deep pulses, soft rises and no vocals",
+          "duration": 20
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/78291ddecd01475aac0aa3c84854f942.mp3"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.02,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:10:45.587Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\sound-studio-20s-audio.mp3"
+  },
+  {
+    "panel": "Video Studio",
+    "requested": "1 video de 10 segundos",
+    "body": {
+      "studio": "video",
+      "model": "ltx-2-fast-text-to-video",
+      "input": {
+        "prompt": "10 second cinematic video of a dog flying above a city at sunset, realistic aerial shot, warm orange sky",
+        "duration": 10
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853131502_8407899cbe176238",
+        "remoteRequestId": "902a2004-e031-4b46-a280-df1b75030a10",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "ltx-2-fast-text-to-video",
+        "endpoint": "ltx-2-fast-text-to-video",
+        "studio": "video",
+        "input": {
+          "prompt": "10 second cinematic video of a dog flying above a city at sunset, realistic aerial shot, warm orange sky",
+          "duration": 10
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:12:11.502Z"
+      },
+      "remote": {
+        "request_id": "902a2004-e031-4b46-a280-df1b75030a10",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "10 second cinematic video of a dog flying above a city at sunset, realistic aerial shot, warm orange sky",
+        "duration": 10
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853131502_8407899cbe176238",
+        "remoteRequestId": "902a2004-e031-4b46-a280-df1b75030a10",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "ltx-2-fast-text-to-video",
+        "endpoint": "ltx-2-fast-text-to-video",
+        "studio": "video",
+        "input": {
+          "prompt": "10 second cinematic video of a dog flying above a city at sunset, realistic aerial shot, warm orange sky",
+          "duration": 10
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/a3e4e51df2f2422cacb66e01fc1def7f.mp4"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:12:11.502Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\video-studio-10s-video.mp4"
+  },
+  {
+    "panel": "Cinema Studio",
+    "requested": "1 video de 10 segundos",
+    "body": {
+      "studio": "cinema",
+      "model": "ltx-2-fast-text-to-video",
+      "input": {
+        "prompt": "10 second cinematic camera shot of a flying dog crossing a sunset skyline over a large city, anamorphic lens, smooth dolly movement",
+        "duration": 10
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853188331_34f0d08a1f57648a",
+        "remoteRequestId": "00059a64-6ea7-4a57-85b8-671770dc966d",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "ltx-2-fast-text-to-video",
+        "endpoint": "ltx-2-fast-text-to-video",
+        "studio": "cinema",
+        "input": {
+          "prompt": "10 second cinematic camera shot of a flying dog crossing a sunset skyline over a large city, anamorphic lens, smooth dolly movement",
+          "duration": 10
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:13:08.331Z"
+      },
+      "remote": {
+        "request_id": "00059a64-6ea7-4a57-85b8-671770dc966d",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "10 second cinematic camera shot of a flying dog crossing a sunset skyline over a large city, anamorphic lens, smooth dolly movement",
+        "duration": 10
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853188331_34f0d08a1f57648a",
+        "remoteRequestId": "00059a64-6ea7-4a57-85b8-671770dc966d",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "ltx-2-fast-text-to-video",
+        "endpoint": "ltx-2-fast-text-to-video",
+        "studio": "cinema",
+        "input": {
+          "prompt": "10 second cinematic camera shot of a flying dog crossing a sunset skyline over a large city, anamorphic lens, smooth dolly movement",
+          "duration": 10
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/803e809342e2442c9c4e43e773b4e58a.mp4"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.52,
+          "amount_credits": 41,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:13:08.331Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\cinema-studio-10s-video.mp4"
+  },
+  {
+    "panel": "Documentary Studio",
+    "requested": "1 video de 10 segundos",
+    "body": {
+      "studio": "documentary",
+      "model": "ltx-2-fast-text-to-video",
+      "input": {
+        "prompt": "10 second documentary style establishing shot of a flying dog over a city at sunset, realistic, news documentary tone",
+        "duration": 10
+      }
+    },
+    "created": {
+      "ok": false,
+      "httpStatus": 402,
+      "gateway": "MuAPI Gateway",
+      "message": "MuAPI HTTP 402",
+      "remote": {
+        "detail": "Insufficient credit balance",
+        "error": {
+          "code": "INSUFFICIENT_CREDITS",
+          "message": "Insufficient credit balance",
+          "topup_url": "https://muapi.ai/topup",
+          "balance_endpoint": "/api/v1/account/balance"
+        }
+      }
+    },
+    "final": null,
+    "status": "NO FUNCIONA",
+    "localFile": null
+  },
+  {
+    "panel": "Music Video Studio",
+    "requested": "1 video de 10 segundos",
+    "body": {
+      "studio": "musicvideo",
+      "model": "ltx-2-fast-text-to-video",
+      "input": {
+        "prompt": "10 second music video clip of a dog flying above a neon city at sunset, rhythmic camera movement, cinematic color",
+        "duration": 10
+      }
+    },
+    "created": {
+      "ok": false,
+      "httpStatus": 402,
+      "gateway": "MuAPI Gateway",
+      "message": "MuAPI HTTP 402",
+      "remote": {
+        "detail": "Insufficient credit balance",
+        "error": {
+          "code": "INSUFFICIENT_CREDITS",
+          "message": "Insufficient credit balance",
+          "topup_url": "https://muapi.ai/topup",
+          "balance_endpoint": "/api/v1/account/balance"
+        }
+      }
+    },
+    "final": null,
+    "status": "NO FUNCIONA",
+    "localFile": null
+  },
+  {
+    "panel": "Lip Sync Studio",
+    "requested": "1 prueba lip sync con voz/imagen disponibles",
+    "body": {
+      "studio": "lipsync",
+      "model": "infinitetalk-image-to-video",
+      "input": {
+        "prompt": "lip sync test using generated narrator audio and generated dog/city reference",
+        "resolution": "480p"
+      }
+    },
+    "created": {
+      "ok": false,
+      "httpStatus": 422,
+      "gateway": "MuAPI Gateway",
+      "message": "MuAPI HTTP 422",
+      "remote": {
+        "detail": [
+          {
+            "type": "missing",
+            "loc": [
+              "body",
+              "image_url"
+            ],
+            "msg": "Field required",
+            "input": {
+              "prompt": "lip sync test using generated narrator audio and generated dog/city reference",
+              "resolution": "480p"
+            }
+          },
+          {
+            "type": "missing",
+            "loc": [
+              "body",
+              "audio_url"
+            ],
+            "msg": "Field required",
+            "input": {
+              "prompt": "lip sync test using generated narrator audio and generated dog/city reference",
+              "resolution": "480p"
+            }
+          }
+        ]
+      }
+    },
+    "final": null,
+    "status": "NO FUNCIONA",
+    "localFile": null
+  },
+  {
+    "panel": "Narrativa y Voz",
+    "requested": "1 voz aproximada de 20 segundos",
+    "body": {
+      "studio": "narrative",
+      "model": "minimax-speech-2.6-hd",
+      "input": {
+        "prompt": "En lo alto de la ciudad, al caer el sol, un perro cruza el cielo como una se?al imposible. La gente mira hacia arriba, sin entender si presencia un milagro, una ilusi?n o el inicio de una historia que nadie podr? olvidar.",
+        "voice_id": "Spanish_Narrator",
+        "speed": 1,
+        "volume": 1,
+        "pitch": 0,
+        "emotion": "neutral",
+        "sample_rate": 24000,
+        "bitrate": 128000,
+        "channel": 1,
+        "format": "mp3",
+        "language_boost": "Spanish"
+      }
+    },
+    "created": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "mode": "remote",
+      "job": {
+        "id": "nf_1781853385780_a781f8c9b645dbe4",
+        "remoteRequestId": "1da3440d-738a-4ae6-8f4a-6adbee6fcdd4",
+        "status": "processing",
+        "progress": 10,
+        "provider": "muapi",
+        "model": "minimax-speech-2.6-hd",
+        "endpoint": "minimax-speech-2.6-hd",
+        "studio": "narrative",
+        "input": {
+          "prompt": "En lo alto de la ciudad, al caer el sol, un perro cruza el cielo como una se?al imposible. La gente mira hacia arriba, sin entender si presencia un milagro, una ilusi?n o el inicio de una historia que nadie podr? olvidar.",
+          "voice_id": "Spanish_Narrator",
+          "speed": 1,
+          "volume": 1,
+          "pitch": 0,
+          "emotion": "neutral",
+          "sample_rate": 24000,
+          "bitrate": 128000,
+          "channel": 1,
+          "format": "mp3",
+          "language_boost": "Spanish"
+        },
+        "outputs": [],
+        "remoteCost": {
+          "amount_usd": 0.0287,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:16:25.780Z"
+      },
+      "remote": {
+        "request_id": "1da3440d-738a-4ae6-8f4a-6adbee6fcdd4",
+        "status": "processing",
+        "cost": {
+          "amount_usd": 0.0287,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        }
+      },
+      "requestPayload": {
+        "prompt": "En lo alto de la ciudad, al caer el sol, un perro cruza el cielo como una se?al imposible. La gente mira hacia arriba, sin entender si presencia un milagro, una ilusi?n o el inicio de una historia que nadie podr? olvidar.",
+        "voice_id": "Spanish_Narrator",
+        "speed": 1,
+        "volume": 1,
+        "pitch": 0,
+        "emotion": "neutral",
+        "sample_rate": 24000,
+        "bitrate": 128000,
+        "channel": 1,
+        "format": "mp3",
+        "language_boost": "Spanish",
+        "english_normalization": false
+      }
+    },
+    "final": {
+      "ok": true,
+      "gateway": "MuAPI Gateway",
+      "job": {
+        "id": "nf_1781853385780_a781f8c9b645dbe4",
+        "remoteRequestId": "1da3440d-738a-4ae6-8f4a-6adbee6fcdd4",
+        "status": "completed",
+        "progress": 100,
+        "provider": "muapi",
+        "model": "minimax-speech-2.6-hd",
+        "endpoint": "minimax-speech-2.6-hd",
+        "studio": "narrative",
+        "input": {
+          "prompt": "En lo alto de la ciudad, al caer el sol, un perro cruza el cielo como una se?al imposible. La gente mira hacia arriba, sin entender si presencia un milagro, una ilusi?n o el inicio de una historia que nadie podr? olvidar.",
+          "voice_id": "Spanish_Narrator",
+          "speed": 1,
+          "volume": 1,
+          "pitch": 0,
+          "emotion": "neutral",
+          "sample_rate": 24000,
+          "bitrate": 128000,
+          "channel": 1,
+          "format": "mp3",
+          "language_boost": "Spanish"
+        },
+        "outputs": [
+          {
+            "type": "media",
+            "title": "MuAPI output 1",
+            "url": "https://cdn.muapi.ai/outputs/generated/0a158c1e316249b3bebd913e544a6223.mp3"
+          }
+        ],
+        "remoteCost": {
+          "amount_usd": 0.0287,
+          "amount_credits": 2,
+          "bonus_credits_used": 0,
+          "refunded": false
+        },
+        "error": null,
+        "createdAt": "2026-06-19T07:16:25.780Z"
+      }
+    },
+    "status": "FUNCIONA",
+    "localFile": "E:\\PROYECTO CODEX\\NEXFRAME FILMS\\qa-panel-tests\\narrativa-voz-test.mp3"
+  },
+  {
+    "panel": "Effects Studio",
+    "requested": "1 video VFX de 10 segundos con imagen base",
+    "body": {
+      "studio": "effects",
+      "model": "ai-video-effects",
+      "input": {
+        "prompt": "dog flying over sunset city with cinematic fire particles and wind blast",
+        "image_url": "https://cdn.muapi.ai/outputs/generated/bef968307ea442b7bcf8dbeb908692d6.jpg",
+        "name": "Fire",
+        "aspect_ratio": "16:9",
+        "resolution": "480p",
+        "quality": "medium",
+        "duration": 10
+      }
+    },
+    "created": {
+      "ok": false,
+      "httpStatus": 402,
+      "gateway": "MuAPI Gateway",
+      "message": "MuAPI HTTP 402",
+      "remote": {
+        "detail": "Insufficient credit balance",
+        "error": {
+          "code": "INSUFFICIENT_CREDITS",
+          "message": "Insufficient credit balance",
+          "topup_url": "https://muapi.ai/topup",
+          "balance_endpoint": "/api/v1/account/balance"
+        }
+      }
+    },
+    "final": null,
+    "status": "NO FUNCIONA",
+    "localFile": null
+  }
+]

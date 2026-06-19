@@ -1,0 +1,29 @@
+{
+  "global_buttons": {
+    "Create Complete Production": "Runs AUTO PIPELINE: research -> script -> storyboard -> assets -> voice -> video -> music/SFX -> captions -> edit -> render -> SEO package.",
+    "Regenerate": "Reruns the current asset using same prompt/model with seed/version tracking.",
+    "Compare Models": "Runs same prompt against selected AI providers and ranks output by score, cost, speed.",
+    "Save to Project": "Stores file, prompt, provider, model, cost, seed, metadata and preview in project."
+  },
+  "required_states": [
+    "idle",
+    "validating",
+    "queued",
+    "processing",
+    "polling",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "no_api_key",
+    "no_credits",
+    "rate_limited",
+    "provider_down",
+    "moderation_required"
+  ],
+  "security_buttons": {
+    "Test Connection": "Validates MuAPI key and enabled model endpoints.",
+    "Rotate Key": "Creates new encrypted token and invalidates old key.",
+    "Audit Logs": "Shows all API calls, costs, users, prompts and downloads.",
+    "Consent Vault": "Stores consent proof for voices, faces and avatars."
+  }
+}

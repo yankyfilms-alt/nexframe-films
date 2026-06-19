@@ -1,0 +1,7 @@
+{
+  "required": [
+    "MUAPI_API_KEY",
+    "MUAPI_API_BASE_URL",
+    "KLING_API_KEY"
+  ]
+}

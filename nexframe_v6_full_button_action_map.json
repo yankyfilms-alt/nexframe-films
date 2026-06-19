@@ -1,0 +1,67 @@
+{
+  "global": [
+    "Upload",
+    "Analyze",
+    "Generate",
+    "Regenerate",
+    "Preview",
+    "Open Editor",
+    "Download",
+    "Export ZIP",
+    "Save Project",
+    "Delete",
+    "Retry",
+    "Use Fallback"
+  ],
+  "music_video_studio": [
+    "Upload Song",
+    "Upload Artist Avatars",
+    "Upload Script/PDF/TXT",
+    "Analyze Song",
+    "Choose Narrative",
+    "Choose Voice",
+    "Create Storyboard",
+    "Generate Images",
+    "Generate Clips",
+    "Apply Effects",
+    "Auto Edit Final",
+    "Export Final Package"
+  ],
+  "documentary_studio": [
+    "Enter Topic",
+    "Upload Narrative",
+    "Generate Narrative",
+    "Choose Voice",
+    "Generate Script",
+    "Extract Scenes",
+    "Generate Voiceover",
+    "Generate Visuals",
+    "Edit Documentary",
+    "Export Documentary"
+  ],
+  "flyer_studio": [
+    "Upload Artist Photo",
+    "Add Flyer Info",
+    "Choose Style",
+    "Choose 1-4 Variants",
+    "Generate Flyer",
+    "Edit Text",
+    "Download PNG",
+    "Download PDF",
+    "Send to Campaign"
+  ],
+  "states_required": [
+    "idle",
+    "validating",
+    "uploading",
+    "analyzing",
+    "queued",
+    "generating",
+    "editing",
+    "success",
+    "partial_success",
+    "failed",
+    "fallback_running",
+    "adapter_required"
+  ]
+}

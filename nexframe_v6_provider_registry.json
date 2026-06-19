@@ -1,0 +1,108 @@
+{
+  "gateway": "MuAPI first; external adapters only when endpoint is unavailable.",
+  "badges": [
+    "STAR_best",
+    "popular",
+    "fast",
+    "cheap",
+    "local",
+    "experimental"
+  ],
+  "panels": {
+    "music_video_studio": {
+      "inputs": [
+        "song_audio",
+        "artist_avatar_photos",
+        "script_pdf_txt_text",
+        "lyrics",
+        "visual_references"
+      ],
+      "workflow": [
+        "ingest",
+        "audio_analysis",
+        "narrative",
+        "storyboard",
+        "image_generation",
+        "video_generation",
+        "lip_sync",
+        "effects",
+        "edit",
+        "subtitles",
+        "export"
+      ],
+      "ranked_video": [
+        "Veo",
+        "Runway",
+        "Kling",
+        "Seedance",
+        "Luma",
+        "Pika",
+        "Hailuo/MiniMax",
+        "ComfyUI/Wan"
+      ],
+      "ranked_image": [
+        "Nano Banana/Gemini Image",
+        "GPT Image",
+        "Midjourney",
+        "Flux/ComfyUI",
+        "Recraft",
+        "Ideogram"
+      ],
+      "ranked_audio": [
+        "Suno",
+        "Udio",
+        "Mureka",
+        "Kits AI",
+        "Moises",
+        "ElevenLabs SFX"
+      ]
+    },
+    "documentary_studio": {
+      "workflow": [
+        "topic_or_file",
+        "research_optional",
+        "script",
+        "scenes",
+        "voiceover",
+        "visuals",
+        "edit",
+        "citations",
+        "export"
+      ],
+      "ranked_llm": [
+        "OpenAI/GPT",
+        "Claude",
+        "Gemini",
+        "Llama/Qwen local"
+      ],
+      "ranked_voice": [
+        "ElevenLabs",
+        "OpenAI Audio",
+        "PlayHT",
+        "Resemble",
+        "Google TTS",
+        "Azure Speech"
+      ]
+    },
+    "flyer_studio": {
+      "max_outputs": 4,
+      "workflow": [
+        "ingest_artist_photo",
+        "fields",
+        "style",
+        "generate_variants",
+        "edit_text",
+        "export_png_pdf"
+      ],
+      "ranked_design": [
+        "Recraft",
+        "Ideogram",
+        "Nano Banana/Gemini Image",
+        "GPT Image",
+        "Midjourney",
+        "Flux/ComfyUI",
+        "Canva/Firefly"
+      ]
+    }
+  }
+}
