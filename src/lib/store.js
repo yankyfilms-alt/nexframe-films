@@ -12,6 +12,7 @@ export const initialState = {
   jobs: [],
   projects: [],
   history: [],
+  trash: [],
   usage: { totalCost: 0, byStudio: {}, byModel: {} }
 };
 

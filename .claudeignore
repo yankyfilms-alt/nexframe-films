@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.git/
+output/
+_backups/
+qa-panel-tests/
+FOTO DE CARRUSER WEB/
+APIS IA/
+AGENTE/
+para meter/*.zip
+nexframe-handoff-skill/.git/
+*.zip
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.mov
+*.pdf

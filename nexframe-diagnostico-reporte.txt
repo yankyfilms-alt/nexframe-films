@@ -1,0 +1,50 @@
+﻿
+========== 1. ARCHIVOS CLAVE ==========
+[EXISTE] src\App.jsx (280286 bytes)
+[EXISTE] server.js (146912 bytes)
+[EXISTE] src\lib\store.js (1846 bytes)
+[EXISTE] src\data\models.js (13206 bytes)
+[EXISTE] src\data\models-registry.js (1888 bytes)
+[EXISTE] src\data\muapiRegistry.js (2316609 bytes)
+[EXISTE] package.json (1198 bytes)
+[EXISTE] .env (497 bytes)
+
+========== 2. VARIABLES DE ENTORNO ==========
+[NO ENCONTRADA] MUAPI_KEY -- revisar si el backend la necesita
+[OK] MUAPI_API_KEY definida (64 caracteres)
+[OK] PORT definida (4 caracteres)
+[NO ENCONTRADA] SESSION_SECRET -- revisar si el backend la necesita
+[NO ENCONTRADA] NODE_ENV -- revisar si el backend la necesita
+
+========== 3. PUERTOS (frontend Vite + backend Express) ==========
+[LIBRE/INACTIVO] Puerto 5173 -- nada escuchando aqui
+[LIBRE/INACTIVO] Puerto 5174 -- nada escuchando aqui
+[LIBRE/INACTIVO] Puerto 5175 -- nada escuchando aqui
+[LIBRE/INACTIVO] Puerto 5176 -- nada escuchando aqui
+[LIBRE/INACTIVO] Puerto 5177 -- nada escuchando aqui
+[LIBRE/INACTIVO] Puerto 8787 -- nada escuchando aqui
+
+========== 4. SALUD DEL BACKEND (/api/health) ==========
+[OK] /api/health responde -- Status: 200
+Body: {"ok":true,"service":"NEXFRAME AI Engine","providers":[{"id":"muapi","name":"MUAPI Universal","configured":true,"baseUrl":"https://api.muapi.ai","status":"ready"},{"id":"kling","name":"Kling AI","configured":false,"baseUrl":"","status":"requires_configuration"},{"id":"openai","name":"OpenAI","configured":false,"baseUrl":"https://api.openai.com","status":"requires_configuration"}],"time":"2026-06-20T17:30:04.246Z"}
+
+========== 5. PROVIDERS / CONEXION MUAPI ==========
+[OK] /api/muapi/providers responde -- Status: 200
+Body (primeros 500 chars): {"ok":true,"gateway":"MuAPI Gateway","providers":[{"id":"muapi","name":"MUAPI Universal","configured":true,"baseUrl":"https://api.muapi.ai","status":"ready"},{"id":"kling","name":"Kling AI","configured":false,"baseUrl":"","status":"requires_configuration"},{"id":"openai","name":"OpenAI","configured":false,"baseUrl":"https://api.openai.com","status":"requires_configuration"}]}
+
+========== 6. REGISTRY DE MODELOS ==========
+[OK] /api/muapi/registry responde -- Status: 200
+Tamano de respuesta: 3598 caracteres
+
+========== 7. AUTENTICACION ==========
+[OK] /api/auth/session responde -- Status: 200
+
+========== 8. LOGS DE SERVIDOR ==========
+[INFO] No se encontraron archivos de log explicitos. Revisa la consola donde corre 'npm run dev:api'.
+
+========== 9. DEPENDENCIAS ==========
+[OK] node_modules existe con ~407 paquetes
+[OK] package-lock.json presente
+
+========== 10. SEGURIDAD (API Key expuesta) ==========
+[OK] Archivo de API key encontrado fuera de frontend: E:\PROYECTO CODEX\NEXFRAME FILMS\API Key MUAPI UNIVERSAL.json

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "mv-scene-1",
+    "start": "00:00",
+    "end": "00:12",
+    "section": "Intro",
+    "role": "Presentacion visual",
+    "scene": "Plano abierto, atmosfera, logo/sello si aplica",
+    "effects": "Light leaks, film grain",
+    "status": "Preparado"
+  },
+  {
+    "id": "mv-scene-2",
+    "start": "00:12",
+    "end": "00:38",
+    "section": "Verso 1",
+    "role": "Performance / narrativa",
+    "scene": "Artista o personaje en locacion principal",
+    "effects": "Cortes suaves al beat",
+    "status": "Preparado"
+  },
+  {
+    "id": "mv-scene-3",
+    "start": "00:38",
+    "end": "00:52",
+    "section": "Pre-coro",
+    "role": "Construccion",
+    "scene": "Movimiento de camara y tension visual",
+    "effects": "Speed ramp controlado",
+    "status": "Preparado"
+  },
+  {
+    "id": "mv-scene-4",
+    "start": "00:52",
+    "end": "01:20",
+    "section": "Coro",
+    "role": "Impacto",
+    "scene": "Escena principal con maxima energia",
+    "effects": "VFX, luces, transiciones fuertes",
+    "status": "Pendiente"
+  },
+  {
+    "id": "mv-scene-5",
+    "start": "01:20",
+    "end": "01:48",
+    "section": "Verso 2",
+    "role": "B-roll / historia",
+    "scene": "Clips locales o escenas generadas",
+    "effects": "Color matching",
+    "status": "Pendiente"
+  },
+  {
+    "id": "mv-scene-6",
+    "start": "01:48",
+    "end": "02:10",
+    "section": "Puente",
+    "role": "Cambio emocional",
+    "scene": "Slow motion, close ups, siluetas",
+    "effects": "Glow, humo, sombras",
+    "status": "Pendiente"
+  },
+  {
+    "id": "mv-scene-7",
+    "start": "02:10",
+    "end": "02:40",
+    "section": "Coro final",
+    "role": "Cierre fuerte",
+    "scene": "Look Hollywood Music Video",
+    "effects": "Montaje rapido al beat",
+    "status": "Pendiente"
+  },
+  {
+    "id": "mv-scene-8",
+    "start": "02:40",
+    "end": "03:00",
+    "section": "Outro",
+    "role": "Salida",
+    "scene": "Plano final y cierre editorial",
+    "effects": "Fade cinematico",
+    "status": "Pendiente"
+  }
+]

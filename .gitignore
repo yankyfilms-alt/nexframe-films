@@ -3,9 +3,14 @@
 .env.*.local
 node_modules/
 dist/
-data/
+/data/
 backups/
 BACKUPS/
+_backups/
+public/uploads/
+tmp/
+output/playwright/
+.playwright-cli/
 *.log
 API Key MUAPI UNIVERSAL.json
 *API*KEY*.json

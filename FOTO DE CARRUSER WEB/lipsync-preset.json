@@ -1,0 +1,37 @@
+{
+  "studio": "lipsync",
+  "form": {
+    "prompt": "",
+    "model": "infinitetalk-image-to-video",
+    "language": "Espanol",
+    "resolution": "1080p"
+  },
+  "model": {
+    "id": "infinitetalk-image-to-video",
+    "name": "Infinite Talk",
+    "endpoint": "infinitetalk-image-to-video",
+    "type": "lipsync",
+    "provider": "muapi",
+    "priority": 88,
+    "inputs": {
+      "resolution": {
+        "type": "string",
+        "title": "Resolution",
+        "name": "resolution",
+        "enum": [
+          "480p",
+          "720p"
+        ],
+        "default": "480p"
+      }
+    },
+    "imageField": null,
+    "videoField": null,
+    "audioField": null,
+    "hasPrompt": false,
+    "hasSeed": false,
+    "supports": [
+      "resolution"
+    ]
+  }
+}

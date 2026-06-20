@@ -1,0 +1,142 @@
+{
+  "id": "nf_1781963884084_4788869ff4305915",
+  "status": "completed",
+  "progress": 100,
+  "provider": "muapi-pipeline",
+  "model": "veo3.1-text-to-video",
+  "studio": "marketing",
+  "input": {
+    "prompt": "13 HERRAMIENTAS. INFINITAS POSIBILIDADES.\nUna suite completa diseñada para crear, automatizar y publicar tu contenido sin complicaciones.\n\n01\nAUDIO REPLACE\nReemplaza el audio original de tus videos de forma masiva y automática.\n\n02\nCLIP CUTTER\nCorta, divide y personaliza tus videos con precisión total al segundo.\n\n03\nFORMAT CONVERTER\nConvierte tus videos a múltiples formatos listos para cualquier plataforma.\n\n04\nSUBTITLE BURNER\nAñade y quema subtítulos directamente en tus videos.\n\n05\nWATERMARK BRAND\nAñade tu logo o marca de agua a todos tus videos.\n\n06\nCOLOR GRADER\nAjusta los colores y crea estilos visuales profesionales.\n\n07\nVIDEO MERGER\nUne múltiples videos en uno solo de forma rápida.\n\n08\nSPEED CONTROL\nAjusta la velocidad de tus videos: cámara rápida o lenta.\n\n09\nPUBLISHER\nPublica y programa tus videos en todas tus redes (vía Postiz).\n\n10\nSCHEDULER\nPrograma y automatiza tus publicaciones para ahorrar tiempo.\n\n11\nAUDIO IA LOCAL\nConvierte texto a voz con voces locales mediante IA.\n\n12\nYF ASSISTANT\nAsistente con IA que te guía y ayuda en todo el proceso.\n\n13\nVIDEO EDITOR\nEdita, corta y mejora tus videos con herramientas avanzadas.\n\nPOR QUÉ ELEGIR YF Auto Clip",
+    "productName": "YF AUTOCLIP",
+    "offer": "ATENCION",
+    "audience": "",
+    "outputType": "Pack completo",
+    "channel": "TikTok / Reels / Shorts 9:16",
+    "visualStyle": "Realista cinematografico",
+    "campaignGoal": "Vender producto",
+    "duration": "10s",
+    "voiceStyle": "Voz vendedora profesional",
+    "soundtrackStyle": "Musica pegadiza moderna",
+    "videoModel": "veo3.1-text-to-video",
+    "imageModel": "ai-product-photography",
+    "editModel": "ai-background-remover",
+    "audioModel": "minimax-speech-2.6-hd",
+    "musicModel": "suno-create-music",
+    "marketingPlan": {
+      "agent": "Director senior de marketing, publicidad y ventas",
+      "objective": "Vender producto",
+      "outputType": "Pack completo",
+      "channel": "TikTok / Reels / Shorts 9:16",
+      "prompt": "Producto: YF AUTOCLIP\nOferta: ATENCION\nPublico objetivo: No definido\nObjetivo: Vender producto\nFormato: Pack completo para TikTok / Reels / Shorts 9:16\nEstilo visual: Realista cinematografico\nDuracion: 10s\nVoz: Voz vendedora profesional\nMusica: Musica pegadiza moderna\nGuion exacto del usuario:\n13 HERRAMIENTAS. INFINITAS POSIBILIDADES.\nUna suite completa diseñada para crear, automatizar y publicar tu contenido sin complicaciones.\n\n01\nAUDIO REPLACE\nReemplaza el audio original de tus videos de forma masiva y automática.\n\n02\nCLIP CUTTER\nCorta, divide y personaliza tus videos con precisión total al segundo.\n\n03\nFORMAT CONVERTER\nConvierte tus videos a múltiples formatos listos para cualquier plataforma.\n\n04\nSUBTITLE BURNER\nAñade y quema subtítulos directamente en tus videos.\n\n05\nWATERMARK BRAND\nAñade tu logo o marca de agua a todos tus videos.\n\n06\nCOLOR GRADER\nAjusta los colores y crea estilos visuales profesionales.\n\n07\nVIDEO MERGER\nUne múltiples videos en uno solo de forma rápida.\n\n08\nSPEED CONTROL\nAjusta la velocidad de tus videos: cámara rápida o lenta.\n\n09\nPUBLISHER\nPublica y programa tus videos en todas tus redes (vía Postiz).\n\n10\nSCHEDULER\nPrograma y automatiza tus publicaciones para ahorrar tiempo.\n\n11\nAUDIO IA LOCAL\nConvierte texto a voz con voces locales mediante IA.\n\n12\nYF ASSISTANT\nAsistente con IA que te guía y ayuda en todo el proceso.\n\n13\nVIDEO EDITOR\nEdita, corta y mejora tus videos con herramientas avanzadas.\n\nPOR QUÉ ELEGIR YF Auto Clip",
+      "steps": [
+        {
+          "id": "strategy",
+          "label": "Estrategia de venta",
+          "model": "Agente NEXFRAME Marketing",
+          "reason": "Analiza guion, oferta, publico y canal para definir gancho, CTA y estructura de conversion."
+        },
+        {
+          "id": "product",
+          "label": "Producto / personaje",
+          "model": "nano-banana",
+          "reason": "Prepara producto, fondo, personaje y estilo visual sin perder proporcion ni marca."
+        },
+        {
+          "id": "visual",
+          "label": "Key visual",
+          "model": "nano-banana",
+          "reason": "Genera la pieza visual principal segun estilo: realista, premium, comic, UGC o personalizado."
+        },
+        {
+          "id": "video",
+          "label": "Video promocional",
+          "model": "veo3.1-text-to-video",
+          "reason": "Crea el spot desde guion y assets cargados."
+        },
+        {
+          "id": "voice",
+          "label": "Voz comercial",
+          "model": "minimax-speech-2.6-hd",
+          "reason": "Genera narracion o locucion comercial con tono adecuado para venta."
+        },
+        {
+          "id": "music",
+          "label": "Musica / ambiente",
+          "model": "suno-create-music",
+          "reason": "Crea musica pegadiza o fondo sonoro coherente con el producto y canal."
+        },
+        {
+          "id": "package",
+          "label": "Pack final",
+          "model": "NEXFRAME Assembly",
+          "reason": "Agrupa video, portada, flyer, copy, prompts, metadata y descargas."
+        }
+      ]
+    }
+  },
+  "outputs": [
+    {
+      "type": "video",
+      "title": "marketing output",
+      "url": "/api/outputs/nf_1781963884084_4788869ff4305915",
+      "mimeType": "application/json",
+      "duration": 10
+    }
+  ],
+  "stages": [
+    {
+      "id": "strategy",
+      "label": "Estrategia de venta",
+      "model": "NEXFRAME Marketing Agent",
+      "status": "completed"
+    },
+    {
+      "id": "product_prep",
+      "label": "Producto y personaje",
+      "model": "ai-background-remover",
+      "status": "completed"
+    },
+    {
+      "id": "key_visual",
+      "label": "Imagen / portada",
+      "model": "ai-product-photography",
+      "status": "completed"
+    },
+    {
+      "id": "video_ad",
+      "label": "Video promocional",
+      "model": "veo3.1-text-to-video",
+      "status": "completed"
+    },
+    {
+      "id": "voiceover",
+      "label": "Voz comercial",
+      "model": "minimax-speech-2.6-hd",
+      "status": "completed"
+    },
+    {
+      "id": "music",
+      "label": "Musica de campana",
+      "model": "suno-create-music",
+      "status": "completed"
+    },
+    {
+      "id": "package",
+      "label": "Pack final",
+      "model": "NEXFRAME Assembly",
+      "status": "completed"
+    }
+  ],
+  "error": null,
+  "createdAt": "2026-06-20T13:58:04.085Z",
+  "pipeline": true,
+  "agent": {
+    "model": "veo3.1-text-to-video",
+    "params": {},
+    "prompt": "13 HERRAMIENTAS. INFINITAS POSIBILIDADES.\nUna suite completa diseñada para crear, automatizar y publicar tu contenido sin complicaciones.\n\n01\nAUDIO REPLACE\nReemplaza el audio original de tus videos de forma masiva y automática.\n\n02\nCLIP CUTTER\nCorta, divide y personaliza tus videos con precisión total al segundo.\n\n03\nFORMAT CONVERTER\nConvierte tus videos a múltiples formatos listos para cualquier plataforma.\n\n04\nSUBTITLE BURNER\nAñade y quema subtítulos directamente en tus videos.\n\n05\nWATERMARK BRAND\nAñade tu logo o marca de agua a todos tus videos.\n\n06\nCOLOR GRADER\nAjusta los colores y crea estilos visuales profesionales.\n\n07\nVIDEO MERGER\nUne múltiples videos en uno solo de forma rápida.\n\n08\nSPEED CONTROL\nAjusta la velocidad de tus videos: cámara rápida o lenta.\n\n09\nPUBLISHER\nPublica y programa tus videos en todas tus redes (vía Postiz).\n\n10\nSCHEDULER\nPrograma y automatiza tus publicaciones para ahorrar tiempo.\n\n11\nAUDIO IA LOCAL\nConvierte texto a voz con voces locales mediante IA.\n\n12\nYF ASSISTANT\nAsistente con IA que te guía y ayuda en todo el proceso.\n\n13\nVIDEO EDITOR\nEdita, corta y mejora tus videos con herramientas avanzadas.\n\nPOR QUÉ ELEGIR YF Auto Clip",
+    "notes": [],
+    "agent": "Agente general NEXFRAME"
+  },
+  "userGenerated": true,
+  "exactPrompt": "13 HERRAMIENTAS. INFINITAS POSIBILIDADES.\nUna suite completa diseñada para crear, automatizar y publicar tu contenido sin complicaciones.\n\n01\nAUDIO REPLACE\nReemplaza el audio original de tus videos de forma masiva y automática.\n\n02\nCLIP CUTTER\nCorta, divide y personaliza tus videos con precisión total al segundo.\n\n03\nFORMAT CONVERTER\nConvierte tus videos a múltiples formatos listos para cualquier plataforma.\n\n04\nSUBTITLE BURNER\nAñade y quema subtítulos directamente en tus videos.\n\n05\nWATERMARK BRAND\nAñade tu logo o marca de agua a todos tus videos.\n\n06\nCOLOR GRADER\nAjusta los colores y crea estilos visuales profesionales.\n\n07\nVIDEO MERGER\nUne múltiples videos en uno solo de forma rápida.\n\n08\nSPEED CONTROL\nAjusta la velocidad de tus videos: cámara rápida o lenta.\n\n09\nPUBLISHER\nPublica y programa tus videos en todas tus redes (vía Postiz).\n\n10\nSCHEDULER\nPrograma y automatiza tus publicaciones para ahorrar tiempo.\n\n11\nAUDIO IA LOCAL\nConvierte texto a voz con voces locales mediante IA.\n\n12\nYF ASSISTANT\nAsistente con IA que te guía y ayuda en todo el proceso.\n\n13\nVIDEO EDITOR\nEdita, corta y mejora tus videos con herramientas avanzadas.\n\nPOR QUÉ ELEGIR YF Auto Clip"
+}
