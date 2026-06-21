@@ -18,7 +18,7 @@ import { openMontageStatus } from "./lib/openmontage-bridge.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const execFileAsync = promisify(execFile);
-const dataDir = path.join(__dirname, "data");
+const dataDir = process.env.VERCEL ? path.join(os.tmpdir(), "nexframe-data") : path.join(__dirname, "data");
 const dbFile = path.join(dataDir, "nexframe-db.json");
 const sessionCookie = "nf_session";
 
