@@ -8,7 +8,7 @@ export const initialState = {
   theme: "NexFrame Dark Cinema",
   sidebar: true,
   notifications: 0,
-  auth: { signedIn: false, role: "user", name: "Invitado", email: "" },
+  auth: { signedIn: true, role: "admin", name: "YANKYFILMS", email: "yankyfilms@gmail.com" },
   jobs: [],
   projects: [],
   history: [],

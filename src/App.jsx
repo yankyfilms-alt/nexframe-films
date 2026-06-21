@@ -314,9 +314,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PublicLandingNew />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/register" element={<AuthPage initialMode="register" />} />
+        <Route path="/" element={<Navigate to="/app/admin" replace />} />
+        <Route path="/login" element={<Navigate to="/app/admin" replace />} />
+        <Route path="/register" element={<Navigate to="/app/admin" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/planes" element={<PublicPlans />} />

@@ -39,6 +39,7 @@ function loadServerEnv() {
 loadServerEnv();
 const authSecret = process.env.NEXFRAME_AUTH_SECRET || "nexframe-local-auth-secret-change-before-production";
 const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-12-17.clover" }) : null;
+const loginDisabled = process.env.NEXFRAME_LOGIN_DISABLED !== "false";
 
 const app = express();
 const jobs = new Map();
@@ -603,7 +604,19 @@ function parseCookies(req) {
 }
 
 function currentUser(req) {
+  if (loginDisabled) return temporaryAdminUser();
   return verifySession(parseCookies(req)[sessionCookie]);
+}
+
+function temporaryAdminUser() {
+  return {
+    id: "usr_temp_admin",
+    name: "YANKYFILMS",
+    email: "yankyfilms@gmail.com",
+    role: "admin",
+    active: true,
+    createdAt: new Date().toISOString()
+  };
 }
 
 function recordUsage({ studio, model, credits = 0, cost = 0 }) {
@@ -2465,6 +2478,7 @@ app.get("/api/auth/session", (req, res) => {
 });
 
 app.post("/api/auth/login", (req, res) => {
+  if (loginDisabled) return res.json({ ok: true, user: publicUser(temporaryAdminUser()) });
   const email = String(req.body?.email || "").trim().toLowerCase();
   const password = String(req.body?.password || "");
   const remember = Boolean(req.body?.remember);
