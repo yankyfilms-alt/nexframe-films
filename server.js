@@ -3950,7 +3950,7 @@ app.get(/.*/, (_req, res) => {
 });
 
 const port = Number(process.env.PORT || 8787);
-validateRegistryAtStartup();
+if (!process.env.VERCEL) validateRegistryAtStartup();
 if (!process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`NEXFRAME server ready on http://localhost:${port}`);

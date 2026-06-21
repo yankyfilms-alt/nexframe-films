@@ -195,6 +195,7 @@ const choiceOptions = {
 function directApiUrl(path) {
   if (!path.startsWith("/api") || typeof window === "undefined") return path;
   const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+  if (!configuredBaseUrl && !["localhost", "127.0.0.1"].includes(window.location.hostname)) return path;
   const baseUrl = configuredBaseUrl || `${window.location.protocol}//${window.location.hostname}:8787`;
   return `${baseUrl}${path}`;
 }
@@ -202,6 +203,7 @@ function directApiUrl(path) {
 function apiAssetUrl(path) {
   if (!path || /^(https?:|blob:|data:)/i.test(path) || typeof window === "undefined") return path;
   const configuredBaseUrl = String(import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+  if (!configuredBaseUrl && !["localhost", "127.0.0.1"].includes(window.location.hostname)) return path;
   const baseUrl = configuredBaseUrl || `${window.location.protocol}//${window.location.hostname}:8787`;
   return path.startsWith("/") ? `${baseUrl}${path}` : path;
 }
