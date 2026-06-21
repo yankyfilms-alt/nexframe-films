@@ -118,6 +118,68 @@ function verifyPassword(password, stored) {
   return crypto.timingSafeEqual(Buffer.from(actual, "hex"), Buffer.from(expected, "hex"));
 }
 
+function parseConfiguredAdmins() {
+  const admins = [];
+  const sharedPassword = String(process.env.NEXFRAME_ADMIN_PASSWORD || "");
+  const defaultEmail = String(process.env.NEXFRAME_ADMIN_EMAIL || "").trim().toLowerCase();
+  if (defaultEmail && sharedPassword) {
+    admins.push({ name: "YANKYFILMS", email: defaultEmail, password: sharedPassword });
+  }
+
+  const adminEmails = String(process.env.NEXFRAME_ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  for (const email of adminEmails) {
+    if (sharedPassword) admins.push({ name: email.split("@")[0], email, password: sharedPassword });
+  }
+
+  if (process.env.NEXFRAME_ADMIN_USERS) {
+    try {
+      const parsed = JSON.parse(process.env.NEXFRAME_ADMIN_USERS);
+      const entries = Array.isArray(parsed) ? parsed : [];
+      for (const entry of entries) {
+        const email = String(entry?.email || "").trim().toLowerCase();
+        const password = String(entry?.password || "");
+        const name = String(entry?.name || email.split("@")[0] || "Administrador").trim();
+        if (email && password.length >= 8) admins.push({ name, email, password });
+      }
+    } catch {
+      log("ADMIN_USERS_ENV_INVALID", { message: "NEXFRAME_ADMIN_USERS debe ser JSON valido." });
+    }
+  }
+
+  return admins.filter((admin, index, list) => list.findIndex((item) => item.email === admin.email) === index);
+}
+
+function ensureConfiguredAdmins(database) {
+  const configuredAdmins = parseConfiguredAdmins();
+  if (!configuredAdmins.length) return false;
+  let changed = false;
+  for (const admin of configuredAdmins) {
+    const existing = database.users.find((user) => user.email.toLowerCase() === admin.email);
+    if (existing) {
+      if (existing.role !== "admin" || existing.active !== true) {
+        existing.role = "admin";
+        existing.active = true;
+        changed = true;
+      }
+      continue;
+    }
+    database.users.push({
+      id: `usr_${requestId()}`,
+      name: admin.name,
+      email: admin.email,
+      role: "admin",
+      passwordHash: hashPassword(admin.password),
+      createdAt: new Date().toISOString(),
+      active: true
+    });
+    changed = true;
+  }
+  return changed;
+}
+
 function addMonths(date, months) {
   const next = new Date(date);
   next.setMonth(next.getMonth() + months);
@@ -423,7 +485,7 @@ function saveDb(db) {
 }
 
 const db = loadDb();
-if (ensureDbShape(db)) saveDb(db);
+if (ensureDbShape(db) || ensureConfiguredAdmins(db)) saveDb(db);
 (db.jobs || []).forEach((job) => jobs.set(job.id, job));
 
 function publicUser(user) {
