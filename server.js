@@ -3951,6 +3951,10 @@ app.get(/.*/, (_req, res) => {
 
 const port = Number(process.env.PORT || 8787);
 validateRegistryAtStartup();
-app.listen(port, () => {
-  console.log(`NEXFRAME server ready on http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`NEXFRAME server ready on http://localhost:${port}`);
+  });
+}
+
+export default app;
