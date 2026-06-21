@@ -112,7 +112,7 @@ const defaultForms = {
     researchLevel: "Investigacion profunda",
     researchModel: "o3-documentary-research",
     scriptModel: "gpt-4.1-documentary-script",
-    videoModel: "veo3.1-text-to-video",
+    videoModel: "seedance-lite-t2v",
     imageModel: "nano-banana",
     audioModel: "suno-create-music",
     voiceProvider: "Level Up",
@@ -133,7 +133,7 @@ const defaultForms = {
     musicGenre: "Auto",
     visualStyle: "Hollywood Music Video",
     editStyle: "Beat synced cinematic",
-    videoModel: "veo3.1-text-to-video",
+    videoModel: "seedance-lite-t2v",
     imageModel: "nano-banana",
     audioAnalysisModel: "auto",
     lipSyncModel: "infinitetalk-image-to-video",
@@ -1932,8 +1932,35 @@ function FileInputs({ studio, model, form, setForm }) {
 
 function NativeStudioPanel({ studio, activeSub, state, actions, form }) {
   const title = activeSub?.title || labelFor(studio);
-  const jobs = (state.jobs || []).filter((job) => job.studio === studio && job.userGenerated === true);
-  const completed = jobs.filter((job) => job.status === "completed");
+  const [persistedJobs, setPersistedJobs] = useState([]);
+  useEffect(() => {
+    let active = true;
+    apiRequest("/api/production/projects")
+      .then((result) => {
+        if (!active) return;
+        setPersistedJobs((result.projects || [])
+          .filter((project) => project.type === studio && project.jobId)
+          .map((project) => ({
+            id: project.jobId,
+            studio: project.type,
+            model: project.stages?.find((stage) => stage.model && stage.model !== "NEXFRAME Orchestrator")?.model || "NEXFRAME",
+            status: project.status,
+            progress: project.progress,
+            outputs: project.assets || [],
+            input: { prompt: project.title },
+            createdAt: project.createdAt,
+            userGenerated: true
+          })));
+      })
+      .catch(() => {
+        if (active) setPersistedJobs([]);
+      });
+    return () => { active = false; };
+  }, [studio]);
+  const jobs = [...(state.jobs || []), ...persistedJobs]
+    .filter((job) => job.studio === studio && job.userGenerated === true)
+    .filter((job, index, list) => list.findIndex((candidate) => candidate.id === job.id) === index);
+  const completed = jobs.filter((job) => job.status === "completed" && outputMediaUrl(job));
   const activeJob = jobs.find((job) => ["queued", "processing"].includes(job.status));
   if (!activeJob && !completed.length) return <EmptyState title="Sin resultados" body="Completa el formulario y genera el primer resultado de este studio." />;
   return (
@@ -2120,7 +2147,7 @@ const documentarySelects = {
   researchModel: ["o3-documentary-research", "gpt-4.1-documentary-script", "auto-mejor-modelo"],
   scriptModel: ["gpt-4.1-documentary-script", "o3-documentary-research", "auto-mejor-modelo"],
   imageModel: ["nano-banana", "gpt-image-2", "kolors-v3", "midjourney-style"],
-  videoModel: ["veo3.1-text-to-video", "kling-v3.0-pro", "runway-aleph", "auto-mejor-video"],
+  videoModel: ["seedance-lite-t2v", "veo3.1-lite-text-to-video", "veo3.1-text-to-video", "kling-v3.0-pro", "runway-aleph", "auto-mejor-video"],
   voiceProvider: ["Level Up", "OpenAI TTS", "ElevenLabs", "Auto"],
   voiceModel: ["narrador-grave-documental", "voz-broadcast-latina", "voz-cine-profunda", "voz-neutral-profesional"],
   audioModel: ["suno-create-music", "udio-cinematic", "auto-mejor-musica"],
@@ -2553,7 +2580,7 @@ function MusicVideoStudio({ actions, busyStudio, state }) {
             <div className="field"><label>Formato</label><select className="select" value={form.target} onChange={(e) => update("target", e.target.value)}>{["YouTube 16:9", "TikTok / Reels 9:16", "Square 1:1", "Cinema 2.39:1"].map((item) => <option key={item}>{item}</option>)}</select></div>
             <div className="field"><label>Resolucion</label><select className="select" value={form.resolution} onChange={(e) => update("resolution", e.target.value)}>{["720p", "1080p Full HD", "2K", "4K"].map((item) => <option key={item}>{item}</option>)}</select></div>
             <div className="field"><label>FPS</label><select className="select" value={form.fps} onChange={(e) => update("fps", e.target.value)}>{["24 fps", "30 fps", "60 fps"].map((item) => <option key={item}>{item}</option>)}</select></div>
-            <div className="field"><label>Modelo video</label><select className="select" value={form.videoModel} onChange={(e) => update("videoModel", e.target.value)}>{["auto", "veo3.1-text-to-video", "kling-v3.0-pro-text-to-video", "wan2.5-image-to-video", "hailuo-video", "pika-video"].map((item) => <option key={item}>{item}</option>)}</select></div>
+            <div className="field"><label>Modelo video</label><select className="select" value={form.videoModel} onChange={(e) => update("videoModel", e.target.value)}>{["seedance-lite-t2v", "veo3.1-lite-text-to-video", "veo3.1-text-to-video", "kling-v3.0-pro-text-to-video", "wan2.5-text-to-video", "auto"].map((item) => <option key={item}>{item}</option>)}</select></div>
             <div className="field"><label>Modelo imagen</label><select className="select" value={form.imageModel} onChange={(e) => update("imageModel", e.target.value)}>{["auto", "nano-banana", "flux", "recraft-v4-1", "ai-product-photography"].map((item) => <option key={item}>{item}</option>)}</select></div>
             <div className="field"><label>Modelo lip sync</label><select className="select" value={form.lipSyncModel} onChange={(e) => update("lipSyncModel", e.target.value)}>{["auto", "infinitetalk-image-to-video", "wav2lip-compatible", "musetalk-compatible", "liveportrait-compatible"].map((item) => <option key={item}>{item}</option>)}</select></div>
             <div className="field"><label>Modelo VFX</label><select className="select" value={form.vfxModel} onChange={(e) => update("vfxModel", e.target.value)}>{["auto-vfx", "ai-video-effects", "background-remover", "relighting", "upscale"].map((item) => <option key={item}>{item}</option>)}</select></div>
@@ -3321,7 +3348,7 @@ function FlyerStudio({ actions, busyStudio, state }) {
   );
 }
 
-function NarrativeStudio({ actions, busyStudio }) {
+function NarrativeStudio({ actions, busyStudio, state }) {
   const [form, setForm] = useState(defaultForms.narrative);
   const [text, setText] = useState("");
   const generate = async () => {
@@ -3344,6 +3371,10 @@ function NarrativeStudio({ actions, busyStudio }) {
           <button className="btn secondary" onClick={() => actions.copy(text || form.prompt)}>Copiar</button>
           <button className="btn secondary" onClick={() => actions.download("narrativa-voz.json", cleanFormForStorage(form))}>Descargar metadata</button>
         </div>
+      </section>
+      <section className="card">
+        <h2>Resultados de voz</h2>
+        <NativeStudioPanel studio="narrative" state={state} actions={actions} form={form} />
       </section>
     </div>
   );

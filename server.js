@@ -1262,10 +1262,14 @@ function modelForPipelineStage(job, stage) {
   const input = job.input || {};
   const requested = stage.capability === "image" || stage.capability === "image-edit" ? input.imageModel || input.model
     : stage.capability === "video" || stage.capability === "video-edit" ? input.videoModel || input.model
-      : stage.capability === "audio" ? input.audioModel || input.voiceModel
+      : stage.capability === "audio" ? input.audioModel || input.voiceModel || "minimax-speech-2.6-hd"
         : stage.capability === "music" ? input.musicModel || input.audioModel
           : null;
-  return requested ? getMuapiModelById(requested) : null;
+  const selected = requested ? getMuapiModelById(requested) : null;
+  if (selected) return selected;
+  if (stage.capability === "image" || stage.capability === "image-edit") return getMuapiModelById("nano-banana");
+  if (stage.capability === "audio") return getMuapiModelById("minimax-speech-2.6-hd");
+  return null;
 }
 
 async function waitForMuapiResult(requestIdValue, attempts = 120) {
@@ -1283,6 +1287,197 @@ async function waitForMuapiResult(requestIdValue, attempts = 120) {
   throw new Error("Timeout esperando el resultado de MuAPI.");
 }
 
+function videoModelForProduction(input = {}) {
+  const requested = String(input.videoModel || input.model || "").trim();
+  if (requested && requested !== "auto" && getMuapiModelById(requested)) return getMuapiModelById(requested);
+  return getMuapiModelById("seedance-lite-t2v") || getMuapiModelById("veo3.1-lite-text-to-video") || getMuapiModelsForStudio("video")[0];
+}
+
+function productionVideoInput(job = {}, stage = {}) {
+  const input = job.input || {};
+  const prompt = [
+    input.prompt || input.topic || "Produccion audiovisual NEXFRAME",
+    input.description && `Contexto: ${input.description}`,
+    input.visualStyle && `Estilo visual: ${input.visualStyle}`,
+    input.narrativeStyle && `Tono narrativo: ${input.narrativeStyle}`,
+    input.musicGenre && `Genero musical: ${input.musicGenre}`,
+    input.editStyle && `Edicion: ${input.editStyle}`,
+    input.script && `Guion/direccion: ${input.script}`,
+    job.studio === "musicvideo" ? "Videoclip cinematografico editado al beat, sin artista real visible, usando modelos ficticios, siluetas, b-roll, luces rojas y doradas, montaje musical profesional." : "",
+    job.studio === "documentary" ? "Documental cinematografico con b-roll realista, escenas de investigacion, camara profesional, textura broadcast, sin texto gigante ni fondo blanco." : "",
+    stage.label && `Etapa: ${stage.label}. Entregar clip final usable, no placeholder.`
+  ].filter(Boolean).join("\n");
+  return {
+    ...input,
+    prompt,
+    aspect_ratio: targetAspectRatio(input) || "16:9",
+    duration: Math.min(5, Math.max(3, parseDuration(input.testDuration || input.clipDuration || 5) || 5)),
+    resolution: /720/.test(String(input.resolution || "")) ? "720p" : "480p"
+  };
+}
+
+async function generateRealMuapiVideoForJob(job, stage = {}) {
+  if (!providers.muapi.apiKey) throw new Error("MUAPI_API_KEY requerida para generar video real.");
+  const modelInfo = videoModelForProduction(job.input);
+  if (!modelInfo) throw new Error("No hay modelo de video MuAPI disponible para esta produccion.");
+  const requestBody = validateMuapiPayload(productionVideoInput(job, stage), modelInfo, job.studio);
+  const endpointPath = modelInfo.endpoint || modelInfo.id;
+  const adapter = await callMuapiAdapter({
+    endpoint: `${providers.muapi.baseUrl.replace(/\/$/, "")}/api/v1/${endpointPath.replace(/^\//, "")}`,
+    apiKey: providers.muapi.apiKey,
+    modelId: modelInfo.id,
+    payload: requestBody,
+    timeoutMs: 30000
+  });
+  if (!adapter.ok) throw new Error(adapter.error?.message || `Fallo la generacion real con ${modelInfo.id}.`);
+  let outputs = extractOutputs(adapter.data);
+  const remoteRequestId = extractRequestId(adapter.data);
+  if (!outputs.some(isRealOutput) && remoteRequestId) outputs = (await waitForMuapiResult(remoteRequestId)).outputs;
+  if (!outputs.some(isRealOutput)) throw new Error("MuAPI termino sin devolver MP4 real.");
+  const saved = await persistRemoteOutputs({ ...job, model: modelInfo.id }, outputs);
+  return { modelInfo, remoteRequestId, saved };
+}
+
+function narrationVoiceForInput(input = {}, studio = "") {
+  const text = `${input.voiceModel || ""} ${input.voiceStyle || ""} ${input.narrativeStyle || ""}`.toLowerCase();
+  if (/comercial|venta|vendedora|marketing|energetica|joven/.test(text) || studio === "marketing") return "Spanish_RationalMan";
+  if (/oscuro|misterio|documental|codigo blanco|grave|cine/.test(text) || studio === "documentary") return "Spanish_Narrator";
+  if (/story|historia|emocion|cinematic/.test(text)) return "Spanish_CaptivatingStoryteller";
+  return "Spanish_Narrator";
+}
+
+function narrationWordTarget(seconds, pace = "dramatic") {
+  const wordsPerMinute = pace === "fast" ? 155 : pace === "standard" ? 135 : 115;
+  return Math.max(18, Math.ceil((Math.max(1, Number(seconds) || 1) / 60) * wordsPerMinute));
+}
+
+function countWords(text = "") {
+  return String(text || "").trim().split(/\s+/).filter(Boolean).length;
+}
+
+function buildNarrationText(input = {}, targetSeconds = 10, studio = "narrative", blockIndex = 0) {
+  const baseText = sanitizeTextForTTS(input.script || input.text || input.prompt || input.topic || "");
+  const targetWords = narrationWordTarget(targetSeconds, /rapido|agil|fast/i.test(input.voiceStyle || input.narrativeStyle || "") ? "fast" : /estandar|standard/i.test(input.voiceStyle || input.narrativeStyle || "") ? "standard" : "dramatic");
+  if (countWords(baseText) >= targetWords * 0.92) return baseText;
+  const topic = baseText || "esta produccion audiovisual";
+  const studioLine = studio === "marketing"
+    ? `El mensaje se presenta con claridad comercial, una promesa directa y una voz segura que guia al espectador hacia la accion.`
+    : studio === "documentary"
+      ? `La narracion avanza con tono cinematografico, pausas naturales y tension informativa sin exagerar los hechos.`
+      : `La locucion mantiene un ritmo natural, cercano y profesional, con diccion limpia en espanol latinoamericano.`;
+  const blocks = [
+    `${topic}. ${studioLine}`,
+    `En este bloque se desarrolla la idea con contexto, intencion y una progresion clara para que la voz respire como una narracion humana.`,
+    `La frase no se repite ni se rellena; se amplia con informacion util, atmosfera y continuidad para cubrir la duracion solicitada.`,
+    `Cada segmento se puede unir al siguiente sin estirar audio, manteniendo volumen estable, cadencia natural y entrega final lista para montaje.`
+  ];
+  const words = baseText ? [baseText] : [];
+  let guard = 0;
+  while (countWords(words.join(" ")) < targetWords && guard < 200) {
+    words.push(blocks[(blockIndex + guard) % blocks.length]);
+    guard += 1;
+  }
+  return sanitizeTextForTTS(words.join(" "));
+}
+
+function splitNarrationIntoBlocks(input = {}, targetSeconds = 10, studio = "narrative") {
+  const maxBlockSeconds = Math.max(10, Math.min(180, Number(input.maxAudioBlockSeconds || 180)));
+  const totalSeconds = Math.max(1, Math.round(Number(targetSeconds) || 10));
+  const blockCount = Math.max(1, Math.ceil(totalSeconds / maxBlockSeconds));
+  const blocks = [];
+  for (let index = 0; index < blockCount; index += 1) {
+    const remaining = totalSeconds - (index * maxBlockSeconds);
+    const blockSeconds = Math.min(maxBlockSeconds, remaining);
+    blocks.push({
+      index,
+      targetSeconds: blockSeconds,
+      text: buildNarrationText(input, blockSeconds, studio, index)
+    });
+  }
+  return blocks;
+}
+
+async function generateMuapiSpeechBlock(job, text, index = 0) {
+  const input = job.input || {};
+  const modelInfo = getMuapiModelById(input.audioModel || input.voiceModel || "minimax-speech-2.6-hd");
+  if (!providers.muapi.apiKey) throw new Error("MUAPI_API_KEY requerida para generar voz real.");
+  if (!modelInfo) throw new Error("No hay modelo TTS MuAPI disponible para esta locucion.");
+  const payload = validateMuapiPayload({
+    prompt: text,
+    voice_id: narrationVoiceForInput(input, job.studio),
+    speed: Math.max(0.9, Math.min(1, Number(input.voiceSpeed || input.speed || 1))),
+    volume: 1,
+    pitch: 0,
+    emotion: input.emotion || "neutral",
+    sample_rate: 44100,
+    bitrate: 128000,
+    channel: 1,
+    format: "mp3",
+    language_boost: "Spanish"
+  }, modelInfo, "narrative");
+  const endpointPath = modelInfo.endpoint || modelInfo.id;
+  const adapter = await callMuapiAdapter({
+    endpoint: `${providers.muapi.baseUrl.replace(/\/$/, "")}/api/v1/${endpointPath.replace(/^\//, "")}`,
+    apiKey: providers.muapi.apiKey,
+    modelId: modelInfo.id,
+    payload,
+    timeoutMs: 30000
+  });
+  if (!adapter.ok) throw new Error(adapter.error?.message || `Fallo la sintesis de voz con ${modelInfo.id}.`);
+  let outputs = extractOutputs(adapter.data);
+  const remoteRequestId = extractRequestId(adapter.data);
+  if (!outputs.some(isRealOutput) && remoteRequestId) outputs = (await waitForMuapiResult(remoteRequestId, 90)).outputs;
+  if (!outputs.some(isRealOutput)) throw new Error("MuAPI termino la voz sin devolver audio real.");
+  const saved = await persistRemoteOutputs({ ...job, model: modelInfo.id, id: `${job.id}_voice_${index + 1}` }, outputs);
+  return { modelInfo, output: saved[0], text, requestId: remoteRequestId };
+}
+
+async function concatenateAudioOutputs(job, outputs = [], targetSeconds = 0) {
+  const audioPaths = outputs.map((output) => uploadUrlToLocalPath(output.url)).filter((filePath) => filePath && fs.existsSync(filePath));
+  if (!audioPaths.length) throw new Error("No hay bloques de audio reales para unir.");
+  if (audioPaths.length === 1) return outputs[0];
+  const studio = job.studio || "narrative";
+  const outputDir = path.join(__dirname, "public", "uploads", "final-renders", studio);
+  fs.mkdirSync(outputDir, { recursive: true });
+  const listPath = path.join(outputDir, `${job.id}_voice_concat.txt`);
+  const outputName = `${job.id}_voice_final.mp3`;
+  const outputPath = path.join(outputDir, outputName);
+  fs.writeFileSync(listPath, audioPaths.map((filePath) => `file '${filePath.replace(/'/g, "'\\''")}'`).join("\n"), "utf8");
+  await execFileAsync("ffmpeg", ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c:a", "libmp3lame", "-b:a", "160k", outputPath], { cwd: __dirname, timeout: 20 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 });
+  const duration = await probeMediaDuration(outputPath);
+  const stats = fs.statSync(outputPath);
+  return {
+    id: `voice_${requestId()}`,
+    type: "audio",
+    title: "Locucion final por bloques",
+    url: `/uploads/final-renders/${studio}/${outputName}`,
+    mimeType: "audio/mpeg",
+    duration,
+    targetDuration: targetSeconds,
+    blocks: outputs.length,
+    bytes: stats.size,
+    createdAt: new Date().toISOString()
+  };
+}
+
+async function generateNarrationAudioForJob(job, stage = {}) {
+  const input = job.input || {};
+  const targetSeconds = Math.max(1, productionTargetSeconds(job.studio || "narrative", {
+    ...input,
+    duration: input.voiceDuration || input.testDuration || input.duration || input.targetDuration || "10s"
+  }));
+  const blocks = splitNarrationIntoBlocks(input, targetSeconds, job.studio || "narrative");
+  const generated = [];
+  for (let index = 0; index < blocks.length; index += 1) {
+    const result = await generateMuapiSpeechBlock(job, blocks[index].text, index);
+    generated.push(result.output);
+  }
+  const finalAudio = await concatenateAudioOutputs(job, generated, targetSeconds);
+  finalAudio.scriptBlocks = blocks.map((block) => ({ index: block.index + 1, targetSeconds: block.targetSeconds, words: countWords(block.text) }));
+  finalAudio.stage = stage.id || stage.label || "voice";
+  return finalAudio;
+}
+
 async function runProductionPipeline(jobId) {
   let job = jobs.get(jobId);
   if (!job) return;
@@ -1297,11 +1492,25 @@ async function runProductionPipeline(jobId) {
       job.stages[index] = { ...stage, status: "processing", error: null };
       job.progress = Math.round(index / job.stages.length * 100);
       jobs.set(job.id, job); persistJob(job);
-      const modelInfo = modelForPipelineStage(job, stage);
+      const forceRealVideo = ["documentary", "musicvideo"].includes(job.studio) && stage.capability === "video";
+      const forceRealAudio = stage.capability === "audio";
+      const modelInfo = forceRealAudio ? null : forceRealVideo ? videoModelForProduction(job.input) : ["documentary", "musicvideo"].includes(job.studio) ? null : modelForPipelineStage(job, stage);
       if (modelInfo) {
+        if (forceRealVideo) {
+          const generated = await generateRealMuapiVideoForJob(job, stage);
+          job.outputs = [...(job.outputs || []), ...generated.saved];
+          job.stages[index] = { ...job.stages[index], model: generated.modelInfo.id, output: generated.saved[0] || null, status: "completed" };
+        } else {
         const endpointPath = modelInfo.endpoint || modelInfo.id;
         const stagePrompt = `${job.input.prompt}\n\nEtapa: ${stage.label}. Mantén la dirección creativa, formato y assets del proyecto.`;
-        const requestBody = validateMuapiPayload({ ...job.input, prompt: stagePrompt }, modelInfo, job.studio);
+        const stageInput = { ...job.input, prompt: stagePrompt };
+        if (stage.capability === "music") {
+          stageInput.style = stageInput.style || stageInput.soundtrackStyle || stageInput.musicStyle || "cinematic commercial background, clean, modern, broadcast ready";
+          stageInput.instrumental = stageInput.instrumental !== false;
+          stageInput.title = stageInput.title || `${job.studio || "NEXFRAME"} audio bed`;
+          if (modelInfo.inputs?.channel) stageInput.channel = 1;
+        }
+        const requestBody = validateMuapiPayload(stageInput, modelInfo, job.studio);
         const adapter = await callMuapiAdapter({ endpoint: `${providers.muapi.baseUrl.replace(/\/$/, "")}/api/v1/${endpointPath.replace(/^\//, "")}`, apiKey: providers.muapi.apiKey, modelId: modelInfo.id, payload: requestBody, timeoutMs: 30000 });
         if (!adapter.ok) throw new Error(adapter.error?.message || `Falló ${stage.label}.`);
         let outputs = extractOutputs(adapter.data);
@@ -1311,6 +1520,11 @@ async function runProductionPipeline(jobId) {
         const persisted = await persistRemoteOutputs(job, outputs);
         job.outputs = [...(job.outputs || []), ...persisted];
         job.stages[index] = { ...job.stages[index], model: modelInfo.id, output: persisted[0] || null, status: "completed" };
+        }
+      } else if (forceRealAudio) {
+        const audio = await generateNarrationAudioForJob(job, stage);
+        job.outputs = [...(job.outputs || []), audio];
+        job.stages[index] = { ...job.stages[index], model: job.input.audioModel || job.input.voiceModel || "minimax-speech-2.6-hd", output: audio, status: "completed" };
       } else {
         job.stages[index] = { ...job.stages[index], model: "NEXFRAME Orchestrator", status: "completed" };
       }
@@ -1319,6 +1533,20 @@ async function runProductionPipeline(jobId) {
     }
     job.status = "completed";
     job.progress = 100;
+    if (["documentary", "musicvideo", "marketing"].includes(job.studio) && (job.outputs || []).some((output) => /video|mp4/i.test(`${output.type || ""} ${output.mimeType || ""} ${output.url || ""}`))) {
+      const finalRender = await renderProductionFinal(job);
+      job.finalRender = finalRender;
+      job.outputs = [finalRender, ...(job.outputs || [])];
+    }
+    const previousProject = (db.productionProjects || []).find((item) => item.jobId === job.id || item.id === job.project?.id);
+    job.project = {
+      ...projectFromProduction(job),
+      userId: job.userId || job.project?.userId || previousProject?.userId || null
+    };
+    const existingProjectIndex = (db.productionProjects || []).findIndex((item) => item.jobId === job.id || item.id === job.project.id);
+    if (existingProjectIndex >= 0) db.productionProjects[existingProjectIndex] = job.project;
+    else db.productionProjects.unshift(job.project);
+    saveDb(db);
     jobs.set(job.id, job); persistJob(job);
   } catch (error) {
     const activeIndex = job.stages.findIndex((stage) => stage.status === "processing");
@@ -1718,6 +1946,99 @@ async function probeMediaDuration(filePath) {
   }
 }
 
+function uploadUrlToLocalPath(url = "") {
+  const cleanUrl = String(url || "").split("?")[0];
+  if (!cleanUrl.startsWith("/uploads/")) return "";
+  return path.join(__dirname, "public", cleanUrl.replace(/^\/+/, ""));
+}
+
+function productionTargetSeconds(studio, input = {}) {
+  const raw = input.targetDuration || input.duration || input.maxDuration || input.length || "";
+  const text = String(raw).toLowerCase();
+  const number = parseDuration(raw);
+  if (!number) return studio === "marketing" ? 30 : studio === "musicvideo" ? 60 : 180;
+  if (/hora|hour/.test(text)) return number * 3600;
+  if (/min|minuto/.test(text)) return number * 60;
+  return number;
+}
+
+function productionRenderSize(input = {}) {
+  const aspect = targetAspectRatio(input) || "16:9";
+  if (aspect === "9:16") return { width: 1080, height: 1920 };
+  if (aspect === "1:1") return { width: 1080, height: 1080 };
+  if (aspect === "21:9") return { width: 1920, height: 820 };
+  return { width: 1920, height: 1080 };
+}
+
+async function renderProductionFinal(job = {}) {
+  const videoOutputs = (job.outputs || []).filter((output) => /video/i.test(output.mimeType || output.type || "") || /\.mp4($|\?)/i.test(output.url || ""));
+  const audioOutput = (job.outputs || []).find((output) => /audio/i.test(output.mimeType || output.type || "") || /\.(mp3|wav|m4a|aac)($|\?)/i.test(output.url || ""));
+  const sourcePaths = videoOutputs.map((output) => uploadUrlToLocalPath(output.url)).filter((filePath) => filePath && fs.existsSync(filePath));
+  const audioPath = audioOutput ? uploadUrlToLocalPath(audioOutput.url) : "";
+  if (!sourcePaths.length) throw new Error("No hay clips de video reales para montar el MP4 final.");
+
+  const studio = job.studio || "production";
+  const input = job.input || {};
+  const targetSeconds = Math.max(1, productionTargetSeconds(studio, input));
+  const { width, height } = productionRenderSize(input);
+  const outputDir = path.join(__dirname, "public", "uploads", "final-renders", studio);
+  fs.mkdirSync(outputDir, { recursive: true });
+  const outputName = `${job.id}_final.mp4`;
+  const outputPath = path.join(outputDir, outputName);
+  const listPath = path.join(outputDir, `${job.id}_concat.txt`);
+
+  const durations = [];
+  for (const sourcePath of sourcePaths) durations.push(await probeMediaDuration(sourcePath));
+  const hasAudio = Boolean(audioPath && fs.existsSync(audioPath));
+  const audioDuration = hasAudio ? await probeMediaDuration(audioPath) : 0;
+  const renderSeconds = hasAudio ? Math.max(targetSeconds, Math.ceil(audioDuration || 0)) : targetSeconds;
+  const cycleDuration = Math.max(0.1, durations.reduce((total, value) => total + Math.max(0.1, value || 0), 0));
+  const repeatCount = Math.max(1, Math.ceil(renderSeconds / cycleDuration) + 1);
+  const lines = [];
+  for (let index = 0; index < repeatCount; index += 1) {
+    for (const sourcePath of sourcePaths) lines.push(`file '${sourcePath.replace(/'/g, "'\\''")}'`);
+  }
+  fs.writeFileSync(listPath, lines.join("\n"), "utf8");
+
+  const filters = `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1`;
+  const args = [
+    "-y",
+    "-f", "concat",
+    "-safe", "0",
+    "-i", listPath,
+  ];
+  if (hasAudio) args.push("-i", audioPath);
+  args.push(
+    "-t", String(renderSeconds),
+    "-vf", filters,
+    "-r", "30",
+    ...(hasAudio ? ["-map", "0:v:0", "-map", "1:a:0", "-c:a", "aac", "-b:a", "192k", "-shortest"] : ["-an"]),
+    "-c:v", "libx264",
+    "-preset", "veryfast",
+    "-crf", "20",
+    "-pix_fmt", "yuv420p",
+    "-movflags", "+faststart",
+    outputPath
+  );
+  await execFileAsync("ffmpeg", args, { cwd: __dirname, timeout: 30 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 });
+
+  const stats = fs.statSync(outputPath);
+  const duration = await probeMediaDuration(outputPath);
+  return {
+    id: `final_${requestId()}`,
+    type: "video",
+    title: "MP4 final montado",
+    url: `/uploads/final-renders/${studio}/${outputName}`,
+    mimeType: "video/mp4",
+    duration,
+    targetDuration: targetSeconds,
+    bytes: stats.size,
+    sourceClips: sourcePaths.length,
+    hasAudio,
+    createdAt: new Date().toISOString()
+  };
+}
+
 async function renderLocalDocumentaryVideo(input = {}, jobId = requestId()) {
   const uploadDir = path.join(__dirname, "public", "uploads", "documentary");
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -1842,20 +2163,24 @@ async function runPersistedDocumentaryJob(jobId, startIndex = 0) {
     documentaryStepProgress(job, index, "processing", `${stage.label} en proceso.`);
     try {
       let output;
-      if (stage.id === "export") {
-        const media = await renderLocalDocumentaryVideo(job.input, job.id);
-        output = media;
-        job.outputs = [media];
+      if (stage.id === "voiceover" || stage.id === "voice") {
+        output = await generateNarrationAudioForJob(job, stage);
+        job.outputs = [...(job.outputs || []), output];
+      } else if (stage.id === "export") {
+        const media = providers.muapi.apiKey
+          ? (await generateRealMuapiVideoForJob(job, stage)).saved[0]
+          : await renderLocalDocumentaryVideo(job.input, job.id);
+        job.outputs = [...(job.outputs || []), media];
+        const finalRender = await renderProductionFinal(job);
+        job.finalRender = finalRender;
+        job.outputs = [finalRender, ...(job.outputs || [])];
+        output = finalRender;
       } else {
         output = buildDocumentaryArtifact(stage.id === "edit" ? "render" : stage.id, job.input);
       }
       documentaryStepProgress(job, index, "completed", `${stage.label} completado.`, output);
     } catch (error) {
       documentaryStepProgress(job, index, "failed", error.message);
-      return;
-    }
-    if (current.pipeline) {
-      clearInterval(timer);
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -2004,10 +2329,16 @@ app.post("/api/documentary/projects/:id/actions/:stage", requireAuth, async (req
   if (!job) return res.status(409).json({ ok: false, message: "El proyecto no tiene un proceso asociado." });
   try {
     let artifact;
-    if (["render", "export"].includes(stage)) {
-      const media = await renderLocalDocumentaryVideo(project.input, job.id);
-      job.outputs = [media];
-      artifact = media;
+    if (stage === "voiceover") {
+      artifact = await generateNarrationAudioForJob(job, { id: stage, label: "Voz narrativa" });
+      job.outputs = [...(job.outputs || []), artifact];
+    } else if (["render", "export"].includes(stage)) {
+      const media = providers.muapi.apiKey
+        ? (await generateRealMuapiVideoForJob(job, { id: stage, label: stage })).saved[0]
+        : await renderLocalDocumentaryVideo(project.input, job.id);
+      job.outputs = [...(job.outputs || []), media];
+      artifact = providers.muapi.apiKey ? await renderProductionFinal(job) : media;
+      if (providers.muapi.apiKey) job.outputs = [artifact, ...(job.outputs || [])];
     } else {
       artifact = buildDocumentaryArtifact(stage, project.input);
     }
@@ -3124,7 +3455,7 @@ app.post("/api/muapi/generate", upload.any(), async (req, res) => {
   }
 });
 
-app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
+app.post("/api/muapi/pipeline", requireAuth, upload.any(), async (req, res) => {
   let payload;
   try {
     payload = req.is("multipart/form-data") ? JSON.parse(req.body.payload || "{}") : req.body || {};
@@ -3166,18 +3497,8 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
   job.stages = stages;
   job.agent = pipelineAgent;
   if (studio === "documentary") {
-    try {
-      const output = await renderLocalDocumentaryVideo(input, job.id);
-      job.status = "completed";
-      job.progress = 100;
-      job.outputs = [output];
-      job.stages = stages.map((stage) => ({ ...stage, status: "completed" }));
-      job.project = buildDocumentaryArtifact("export", input);
-    } catch (error) {
-      job.status = "failed";
-      job.progress = 0;
-      job.error = `Render documental local fallido: ${error.message}`;
-    }
+    job.project = buildDocumentaryArtifact("preview", input);
+    job.outputs = [];
   }
   if (studio === "musicvideo") {
     const musicVideoProject = buildMusicVideoProject(input, stages);
@@ -3186,6 +3507,7 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
   }
   if (!job.project) job.project = projectFromProduction(job);
   const owner = currentUser(req);
+  job.userId = owner?.id || null;
   job.project.userId = owner?.id || null;
   job.project.assets = job.outputs || [];
   const existingProjectIndex = (db.productionProjects || []).findIndex((item) => item.id === job.project.id);
@@ -3194,7 +3516,7 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
   jobs.set(job.id, job);
   persistJob(job);
   saveDb(db);
-  if (studio !== "documentary") setTimeout(() => runProductionPipeline(job.id), 0);
+  setTimeout(() => runProductionPipeline(job.id), 0);
   log("MUAPI_PIPELINE_CREATED", { jobId: job.id, studio, target: input.target, stages: stages.map((stage) => stage.id), agent: pipelineAgent.agent });
   return sendGeneration(res, {
     job,
