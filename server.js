@@ -13,6 +13,8 @@ import { promisify } from "util";
 import { fileURLToPath } from "url";
 import { getModelContract, getMuapiModelById, getMuapiModelsForStudio, muapiRegistry } from "./src/data/models-registry.js";
 import { classifyUploads, sanitizeTextForTTS, selectAgentForStudio, validateAgentOutput } from "./src/data/agents-runtime.js";
+import { productionManifest, projectFromProduction, validateProductionRequest } from "./lib/production-engine.js";
+import { openMontageStatus } from "./lib/openmontage-bridge.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const execFileAsync = promisify(execFile);
@@ -347,6 +349,7 @@ function defaultDb() {
     publicWebsite: defaultPublicData(),
     projects: [],
     documentaryProjects: [],
+    productionProjects: [],
     jobs: [],
     usage: { creditsTotal: 12450, creditsUsed: 0, byStudio: {}, byModel: {} },
     createdAt: new Date().toISOString()
@@ -373,6 +376,10 @@ function ensureDbShape(database) {
   }
   if (!Array.isArray(database.documentaryProjects)) {
     database.documentaryProjects = [];
+    changed = true;
+  }
+  if (!Array.isArray(database.productionProjects)) {
+    database.productionProjects = [];
     changed = true;
   }
   if (!database.siteContent) {
@@ -773,6 +780,13 @@ function persistJob(job) {
   if (index >= 0) jobsList[index] = job;
   else jobsList.unshift(job);
   db.jobs = jobsList.slice(0, 500);
+  if (job.pipeline && Array.isArray(db.productionProjects)) {
+    const projectIndex = db.productionProjects.findIndex((item) => item.jobId === job.id);
+    if (projectIndex >= 0) {
+      const previous = db.productionProjects[projectIndex];
+      db.productionProjects[projectIndex] = { ...previous, ...projectFromProduction(job), userId: previous.userId, editorProjectId: previous.editorProjectId };
+    }
+  }
   saveDb(db);
 }
 
@@ -1140,6 +1154,8 @@ function createLocalJob(payload) {
   jobs.set(id, job);
   persistJob(job);
 
+  if (payload.autoComplete === false) return job;
+
   const timer = setInterval(() => {
     const current = jobs.get(id);
     if (!current || current.status === "completed" || current.status === "failed" || current.status === "cancelled") {
@@ -1233,11 +1249,83 @@ async function callMuapiAdapter({ endpoint, apiKey, modelId, payload, timeoutMs 
     }
     return { ok: true, data, status: response.status };
   } catch (error) {
-    const message = error.name === "AbortError" ? "Timeout creando job remoto MuAPI." : error.message;
-    log("MUAPI_ADAPTER_ERROR", { model: modelId, message });
+    const networkDetail = error.cause?.message || error.cause?.code || "";
+    const message = error.name === "AbortError" ? "Timeout creando job remoto MuAPI." : `${error.message}${networkDetail ? `: ${networkDetail}` : ""}`;
+    log("MUAPI_ADAPTER_ERROR", { model: modelId, message, code: error.cause?.code });
     return { ok: false, status: 502, error: { code: "muapi_request_error", message } };
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function modelForPipelineStage(job, stage) {
+  const input = job.input || {};
+  const requested = stage.capability === "image" || stage.capability === "image-edit" ? input.imageModel || input.model
+    : stage.capability === "video" || stage.capability === "video-edit" ? input.videoModel || input.model
+      : stage.capability === "audio" ? input.audioModel || input.voiceModel
+        : stage.capability === "music" ? input.musicModel || input.audioModel
+          : null;
+  return requested ? getMuapiModelById(requested) : null;
+}
+
+async function waitForMuapiResult(requestIdValue, attempts = 120) {
+  const endpoint = `${providers.muapi.baseUrl.replace(/\/$/, "")}/api/v1/predictions/${encodeURIComponent(requestIdValue)}/result`;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const response = await fetch(endpoint, { headers: { "x-api-key": providers.muapi.apiKey } });
+    const remote = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(formatMuapiRemoteError(remote, `MuAPI polling HTTP ${response.status}`));
+    const outputs = extractOutputs(remote);
+    const status = String(remote.status || remote.data?.status || "").toLowerCase();
+    if (outputs.some(isRealOutput) || ["completed", "success", "succeeded", "done"].includes(status)) return { remote, outputs };
+    if (["failed", "error", "cancelled", "canceled"].includes(status)) throw new Error(formatMuapiRemoteError(remote, "MuAPI no pudo completar la etapa."));
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+  }
+  throw new Error("Timeout esperando el resultado de MuAPI.");
+}
+
+async function runProductionPipeline(jobId) {
+  let job = jobs.get(jobId);
+  if (!job) return;
+  if (!providers.muapi.apiKey) {
+    job = { ...job, status: "failed", error: "MUAPI_API_KEY no está configurada en el servidor.", stages: job.stages.map((stage, index) => index === 0 ? { ...stage, status: "failed", error: "Credencial MuAPI requerida." } : stage) };
+    jobs.set(job.id, job); persistJob(job); return;
+  }
+  try {
+    job.status = "processing";
+    for (let index = 0; index < job.stages.length; index += 1) {
+      const stage = job.stages[index];
+      job.stages[index] = { ...stage, status: "processing", error: null };
+      job.progress = Math.round(index / job.stages.length * 100);
+      jobs.set(job.id, job); persistJob(job);
+      const modelInfo = modelForPipelineStage(job, stage);
+      if (modelInfo) {
+        const endpointPath = modelInfo.endpoint || modelInfo.id;
+        const stagePrompt = `${job.input.prompt}\n\nEtapa: ${stage.label}. Mantén la dirección creativa, formato y assets del proyecto.`;
+        const requestBody = validateMuapiPayload({ ...job.input, prompt: stagePrompt }, modelInfo, job.studio);
+        const adapter = await callMuapiAdapter({ endpoint: `${providers.muapi.baseUrl.replace(/\/$/, "")}/api/v1/${endpointPath.replace(/^\//, "")}`, apiKey: providers.muapi.apiKey, modelId: modelInfo.id, payload: requestBody, timeoutMs: 30000 });
+        if (!adapter.ok) throw new Error(adapter.error?.message || `Falló ${stage.label}.`);
+        let outputs = extractOutputs(adapter.data);
+        const remoteRequestId = extractRequestId(adapter.data);
+        if (!outputs.some(isRealOutput) && remoteRequestId) outputs = (await waitForMuapiResult(remoteRequestId)).outputs;
+        if (!outputs.some(isRealOutput)) throw new Error(`${stage.label} terminó sin archivo multimedia real.`);
+        const persisted = await persistRemoteOutputs(job, outputs);
+        job.outputs = [...(job.outputs || []), ...persisted];
+        job.stages[index] = { ...job.stages[index], model: modelInfo.id, output: persisted[0] || null, status: "completed" };
+      } else {
+        job.stages[index] = { ...job.stages[index], model: "NEXFRAME Orchestrator", status: "completed" };
+      }
+      job.progress = Math.round((index + 1) / job.stages.length * 100);
+      jobs.set(job.id, job); persistJob(job);
+    }
+    job.status = "completed";
+    job.progress = 100;
+    jobs.set(job.id, job); persistJob(job);
+  } catch (error) {
+    const activeIndex = job.stages.findIndex((stage) => stage.status === "processing");
+    if (activeIndex >= 0) job.stages[activeIndex] = { ...job.stages[activeIndex], status: "failed", error: error.message };
+    job.status = "failed";
+    job.error = error.message;
+    jobs.set(job.id, job); persistJob(job);
   }
 }
 
@@ -1764,6 +1852,10 @@ async function runPersistedDocumentaryJob(jobId, startIndex = 0) {
       documentaryStepProgress(job, index, "completed", `${stage.label} completado.`, output);
     } catch (error) {
       documentaryStepProgress(job, index, "failed", error.message);
+      return;
+    }
+    if (current.pipeline) {
+      clearInterval(timer);
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 150));
@@ -2588,6 +2680,83 @@ app.get("/api/deployment/validate", (_req, res) => {
   res.json({ ok: requiredChecks.every((check) => check.ok), checks, warnings, time: new Date().toISOString() });
 });
 
+app.get("/api/openmontage/status", requireAuth, async (_req, res) => {
+  try {
+    const status = await openMontageStatus();
+    res.json({ ok: true, status });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: `No se pudo leer OpenMontage: ${error.message}` });
+  }
+});
+
+app.get("/api/openmontage/pipelines/:id", requireAuth, async (req, res) => {
+  try {
+    const status = await openMontageStatus();
+    const pipeline = status.pipelines.find((item) => item.id === req.params.id || item.name === req.params.id);
+    if (!pipeline) return res.status(404).json({ ok: false, message: "Pipeline OpenMontage no encontrado." });
+    res.json({ ok: true, pipeline });
+  } catch (error) {
+    res.status(500).json({ ok: false, message: `No se pudo leer el pipeline: ${error.message}` });
+  }
+});
+
+app.get("/api/production/projects", requireAuth, (req, res) => {
+  const projects = (db.productionProjects || []).filter((project) => req.user.role === "admin" || project.userId === req.user.id);
+  res.json({ ok: true, projects });
+});
+
+app.get("/api/production/projects/:id", requireAuth, (req, res) => {
+  const project = (db.productionProjects || []).find((item) => item.id === req.params.id && (req.user.role === "admin" || item.userId === req.user.id));
+  if (!project) return res.status(404).json({ ok: false, message: "Proyecto de producción no encontrado." });
+  res.json({ ok: true, project });
+});
+
+app.post("/api/production/projects/:id/send-to-editor", requireAuth, async (req, res) => {
+  ensureEditorStore();
+  const production = (db.productionProjects || []).find((item) => item.id === req.params.id && (req.user.role === "admin" || item.userId === req.user.id));
+  if (!production) return res.status(404).json({ ok: false, message: "Proyecto de producción no encontrado." });
+  const outputs = (production.assets || []).filter((item) => item?.url && /^\/uploads\//.test(item.url));
+  if (!outputs.length) return res.status(409).json({ ok: false, message: "El proyecto todavía no tiene archivos reales para editar." });
+  const now = new Date().toISOString();
+  const editorProject = {
+    id: `edit_${requestId()}`,
+    userId: req.user.id,
+    productionProjectId: production.id,
+    name: production.title,
+    settings: { width: 1920, height: 1080, fps: 30, aspectRatio: "16:9" },
+    media: [],
+    timeline: { duration: 0, tracks: [] },
+    operationHistory: [],
+    createdAt: now,
+    updatedAt: now
+  };
+  let cursor = 0;
+  for (const output of outputs) {
+    const sourcePath = path.join(__dirname, "public", output.url.replace(/^\/uploads\//, "uploads/"));
+    if (!fs.existsSync(sourcePath)) continue;
+    const probe = await probeEditorMedia(sourcePath);
+    const type = probe.hasVideo ? "video" : probe.hasAudio ? "audio" : "image";
+    const media = { id: `media_${requestId()}`, name: output.title || path.basename(sourcePath), mimeType: output.mimeType || (type === "video" ? "video/mp4" : type === "audio" ? "audio/mpeg" : "image/png"), sourcePath, url: output.url, thumbnailUrl: type === "image" ? output.url : null, ...probe, createdAt: now };
+    editorProject.media.push(media);
+    let track = editorProject.timeline.tracks.find((item) => item.type === type);
+    if (!track) {
+      track = { id: `track_${requestId()}`, type, name: type === "video" ? "Video principal" : type === "audio" ? "Audio principal" : "Imágenes", clips: [] };
+      editorProject.timeline.tracks.push(track);
+    }
+    const duration = Math.max(.1, Number(media.duration || (type === "image" ? 5 : 1)));
+    const start = type === "audio" ? 0 : cursor;
+    track.clips.push({ id: `clip_${requestId()}`, mediaId: media.id, type, name: media.name, start, end: start + duration, in: 0, url: media.url, thumbnailUrl: media.thumbnailUrl });
+    if (type !== "audio") cursor += duration;
+    editorProject.timeline.duration = Math.max(editorProject.timeline.duration, start + duration);
+  }
+  if (!editorProject.media.length) return res.status(409).json({ ok: false, message: "Los archivos del proyecto ya no están disponibles en almacenamiento." });
+  db.editorProjects.unshift(editorProject);
+  production.editorProjectId = editorProject.id;
+  production.updatedAt = now;
+  saveDb(db);
+  res.status(201).json({ ok: true, project: editorProject, redirectUrl: `/editor/${editorProject.id}` });
+});
+
 app.get("/api/editor/projects", requireAuth, (req, res) => {
   ensureEditorStore();
   res.json({ ok: true, projects: db.editorProjects.filter((project) => project.userId === req.user.id) });
@@ -2969,11 +3138,12 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
   } catch (error) {
     return res.status(502).json({ ok: false, gateway: "MuAPI Gateway", message: `No se pudo subir el archivo a MuAPI: ${error.message}` });
   }
-  if (!["documentary", "musicvideo", "marketing"].includes(studio)) {
-    return res.status(400).json({ ok: false, message: "Pipeline solo disponible para Documentary Studio, Music Video Studio y Marketing." });
+  if (!["documentary", "musicvideo", "marketing", "flyer", "image", "video", "sound", "narrative"].includes(studio)) {
+    return res.status(400).json({ ok: false, message: "Este estudio no dispone de pipeline de producción." });
   }
-  if (!input.prompt?.trim()) {
-    return res.status(400).json({ ok: false, message: "Falta el tema o prompt principal del proyecto." });
+  const validation = validateProductionRequest(studio, input);
+  if (!validation.ok) {
+    return res.status(400).json({ ok: false, message: validation.errors.join(" "), errors: validation.errors });
   }
   const pipelineAgent = selectAgentForStudio(studio, input.prompt, {
     ...input,
@@ -2981,24 +3151,15 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
   });
   input = { ...(pipelineAgent.params || {}), ...input };
 
-  const stages = studio === "documentary"
-    ? documentaryPipelineStages(input)
-    : studio === "musicvideo" ? musicVideoPipelineStages(input) : [
-      { id: "strategy", label: "Estrategia de venta", model: "NEXFRAME Marketing Agent", status: "queued" },
-      { id: "product_prep", label: "Producto y personaje", model: input.editModel || "ai-background-remover", status: "queued" },
-      { id: "key_visual", label: "Imagen / portada", model: input.imageModel || "ai-product-photography", status: "queued" },
-      { id: "video_ad", label: "Video promocional", model: input.videoModel || "veo3.1-text-to-video", status: "queued" },
-      { id: "voiceover", label: "Voz comercial", model: input.audioModel || "minimax-speech-2.6-hd", status: "queued" },
-      { id: "music", label: "Musica de campana", model: input.musicModel || "suno-create-music", status: "queued" },
-      { id: "package", label: "Pack final", model: "NEXFRAME Assembly", status: "queued" }
-    ];
+  const stages = productionManifest(studio, input);
 
   const job = createLocalJob({
     provider: providers.muapi.apiKey ? "muapi-pipeline" : "muapi-local-pipeline",
     model: input.videoModel || input.imageModel || input.audioModel || "muapi-pipeline",
     studio,
     input,
-    stages
+    stages,
+    autoComplete: false
   });
   job.pipeline = true;
   job.target = input.target;
@@ -3019,12 +3180,21 @@ app.post("/api/muapi/pipeline", upload.any(), async (req, res) => {
     }
   }
   if (studio === "musicvideo") {
-    job.project = buildMusicVideoProject(input, stages);
-    job.timeline = job.project.timeline;
-    job.outputs = [{ type: "metadata", title: "Music Video Project", project: job.project }];
+    const musicVideoProject = buildMusicVideoProject(input, stages);
+    job.timeline = musicVideoProject.timeline;
+    job.outputs = [];
   }
+  if (!job.project) job.project = projectFromProduction(job);
+  const owner = currentUser(req);
+  job.project.userId = owner?.id || null;
+  job.project.assets = job.outputs || [];
+  const existingProjectIndex = (db.productionProjects || []).findIndex((item) => item.id === job.project.id);
+  if (existingProjectIndex >= 0) db.productionProjects[existingProjectIndex] = job.project;
+  else db.productionProjects.unshift(job.project);
   jobs.set(job.id, job);
   persistJob(job);
+  saveDb(db);
+  if (studio !== "documentary") setTimeout(() => runProductionPipeline(job.id), 0);
   log("MUAPI_PIPELINE_CREATED", { jobId: job.id, studio, target: input.target, stages: stages.map((stage) => stage.id), agent: pipelineAgent.agent });
   return sendGeneration(res, {
     job,

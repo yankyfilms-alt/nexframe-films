@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useState } from "react";
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Activity, AlertCircle, Bell, Bot, Box, Calendar, Camera, Check, ChevronDown, Clapperboard, Cloud, Coins, Copy,
   Crown, CreditCard, Database, Download, Eye, EyeOff, FileText, Folder, Gauge, Gem, HelpCircle,
@@ -152,7 +152,7 @@ const defaultForms = {
   },
   narrative: { prompt: "", model: "minimax-speech-2.6-hd", voiceStyle: "Narrador grave documental", language: "Espanol", format: "mp3", maxCharacters: 10000 },
   youtube: { channelUrl: "", objective: "Detectar nicho documental rentable", duration: "35-40 min", tone: "Codigo Blanco broadcast", target: "YouTube documental 16:9" },
-  flyer: { prompt: "", model: "nano-banana", title: "", date: "", place: "", price: "", style: "Nightclub Neon", designType: "Discoteca / Club", outputFormat: "Panel web 16:10", targetAudience: "Jovenes 18-35", colors: "rojo, dorado, negro", detailLevel: 82, variants: 4, customWidth: 1600, customHeight: 1000, customUnit: "px", includeText: false, useReference: false },
+  flyer: { prompt: "", model: "nano-banana", title: "", secondaryText: "", platform: "Instagram", date: "", place: "", price: "", artistName: "", musicTitle: "", genre: "", hookText: "", style: "Nightclub Neon", designType: "Discoteca / Club", outputFormat: "Instagram 4:5", targetAudience: "Jovenes 18-35", colors: "rojo, dorado, negro", detailLevel: 82, variants: 4, customWidth: 1080, customHeight: 1350, customUnit: "px", includeText: false, useReference: false },
   marketing: {
     prompt: "",
     productName: "",
@@ -2847,6 +2847,7 @@ function PrototypeVideoEditorStudio({ actions, busyStudio, state }) {
 }
 
 function VideoEditorStudio({ actions }) {
+  const { projectId } = useParams();
   const [project, setProject] = useState(null);
   const [selection, setSelection] = useState({ trackId: "", clipId: "" });
   const [playhead, setPlayhead] = useState(0);
@@ -2855,13 +2856,20 @@ function VideoEditorStudio({ actions }) {
   const [messages, setMessages] = useState([]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [openMontage, setOpenMontage] = useState(null);
   const videoRef = React.useRef(null);
   const loadProject = async () => {
+    if (projectId) return (await apiRequest(`/api/editor/projects/${projectId}`)).project;
     const result = await apiRequest("/api/editor/projects");
     if (result.projects?.length) return result.projects[0];
     return (await apiRequest("/api/editor/projects", { method: "POST", body: JSON.stringify({ name: "Mi montaje" }) })).project;
   };
-  useEffect(() => { loadProject().then(setProject).catch((issue) => setError(issue.message)); }, []);
+  useEffect(() => { loadProject().then(setProject).catch((issue) => setError(issue.message)); }, [projectId]);
+  useEffect(() => {
+    apiRequest("/api/openmontage/status")
+      .then((result) => setOpenMontage(result.status))
+      .catch(() => setOpenMontage(null));
+  }, []);
   const save = async () => {
     if (!project) return;
     setBusy("save"); setError("");
@@ -2915,6 +2923,7 @@ function VideoEditorStudio({ actions }) {
   if (!project) return <section className="editor-pane"><h1>VIDEO EDITOR STUDIO AI</h1><p>{error || "Cargando proyecto persistente..."}</p></section>;
   return <div className="editor-workspace real-editor">
     <header className="editor-commandbar"><div><span className="editor-kicker">PROYECTO REAL</span><h1>VIDEO EDITOR STUDIO AI</h1><input className="editor-title-input" value={project.name} onChange={(event) => setProject((value) => ({ ...value, name: event.target.value }))} /></div><div className="editor-project-meta"><span>{project.media.length} medios</span><span>{project.timeline.tracks.length} pistas</span><span>{duration.toFixed(2)} s</span></div><div className="editor-header-actions"><button className="btn secondary" disabled={Boolean(busy)} onClick={save}><Save size={15} />{busy === "save" ? "Guardando..." : "Guardar version"}</button><button className="btn" disabled={Boolean(busy)} onClick={render}><Download size={16} />{busy === "render" ? "Renderizando..." : "Exportar MP4 real"}</button></div></header>
+    <OpenMontageEditorPanel status={openMontage} />
     {error && <div className="editor-error"><AlertCircle size={16} />{error}</div>}
     <div className="editor-upper-grid">
       <section className="editor-pane editor-media-pane"><PaneTitle title="Biblioteca persistente" meta={`${project.media.length} archivos`}><label className="editor-upload"><Plus size={15} />{busy === "upload" ? "Analizando..." : "Subir"}<input type="file" multiple accept="video/*,audio/*,image/*,.srt" disabled={busy === "upload"} onChange={(event) => uploadMedia(event.target.files)} /></label></PaneTitle><div className="editor-media-grid">{project.media.length ? project.media.map((media) => <button draggable key={media.id} onDragStart={(event) => event.dataTransfer.setData("mediaId", media.id)} onDoubleClick={() => addMediaToTimeline(media)} title="Doble clic o arrastra a la timeline"><span className="media-icon">{media.thumbnailUrl ? <img src={apiAssetUrl(media.thumbnailUrl)} alt="" /> : media.hasAudio ? <Music /> : <Image />}</span><strong>{media.name}</strong><small>{media.duration ? `${media.duration.toFixed(2)} s` : media.mimeType}</small></button>) : <label className="editor-media-empty"><Upload size={24} /><strong>Sube medios reales</strong><span>Se analizaran con FFprobe</span><input type="file" multiple accept="video/*,audio/*,image/*,.srt" onChange={(event) => uploadMedia(event.target.files)} /></label>}</div></section>
@@ -2929,6 +2938,33 @@ function VideoEditorStudio({ actions }) {
 
 function PaneTitle({ title, meta, children }) {
   return <div className="editor-pane-title"><div><h2>{title}</h2><span>{meta}</span></div>{children}</div>;
+}
+
+function OpenMontageEditorPanel({ status }) {
+  if (!status) return null;
+  const pipelines = status.pipelines || [];
+  const families = status.toolFamilies || [];
+  const runtimeItems = Object.entries(status.runtimes || {});
+  return (
+    <section className="editor-pane openmontage-panel">
+      <PaneTitle title="OpenMontage Engine" meta={`${status.totals?.pipelines || 0} pipelines · ${status.totals?.tools || 0} herramientas`}>
+        <Clapperboard size={18} />
+      </PaneTitle>
+      <div className="openmontage-runtime-row">
+        {runtimeItems.map(([name, runtime]) => <span className={runtime.ok ? "ok" : "warn"} key={name}>{name}: {runtime.ok ? "OK" : "No disponible"}</span>)}
+      </div>
+      <div className="openmontage-grid">
+        {pipelines.slice(0, 8).map((pipeline) => <article key={pipeline.id}>
+          <strong>{pipeline.name}</strong>
+          <span>{pipeline.category} · {pipeline.stability}</span>
+          <small>{pipeline.stages.length} etapas</small>
+        </article>)}
+      </div>
+      <div className="openmontage-families">
+        {families.slice(0, 10).map((family) => <span key={family.family}>{family.family} ({family.count})</span>)}
+      </div>
+    </section>
+  );
 }
 
 function WorkflowScreen({ type, actions, busyStudio, state }) {
@@ -3019,6 +3055,49 @@ const flyerFormats = [
   { name: "Personalizado", short: "Custom", width: 1600, height: 1000, unit: "px", label: "Medida manual para lona, banner o pieza especial" }
 ];
 
+const flyerModePresets = {
+  Flyer: {
+    designType: "Discoteca / Club",
+    outputFormat: "Instagram 4:5",
+    platform: "Instagram",
+    title: "Flyer",
+    purpose: "promocionar un evento, negocio, oferta o actividad local",
+    required: ["idea", "titulo", "fecha", "lugar", "precio", "publico"],
+    styles: ["Nightclub Neon", "Luxury Gold", "Urban Dark", "Tropical Party", "Food Premium", "Corporate Clean"],
+    uploadLabel: "Producto, local o foto principal"
+  },
+  Miniatura: {
+    designType: "Thumbnail YouTube",
+    outputFormat: "YouTube thumbnail 16:9",
+    platform: "YouTube",
+    title: "Miniatura",
+    purpose: "crear una miniatura con gancho visual inmediato para YouTube, Shorts o campanas virales",
+    required: ["tema", "gancho", "foto principal", "emocion", "contraste"],
+    styles: ["YouTube Viral", "Cinematic Poster", "Urban Dark", "Futuristic AI"],
+    uploadLabel: "Foto del artista, creador, producto o sujeto"
+  },
+  Cover: {
+    designType: "Cover Musical",
+    outputFormat: "Cover musical 1:1",
+    platform: "Spotify",
+    title: "Cover",
+    purpose: "crear una portada musical para Spotify, YouTube Music, single, album o playlist",
+    required: ["artista", "titulo", "genero", "mood", "paleta"],
+    styles: ["Music Video Dark", "Luxury Gold", "Urban Dark", "Tropical Party", "Cinematic Poster"],
+    uploadLabel: "Referencia visual del mood o producto musical"
+  },
+  Poster: {
+    designType: "Poster Cine",
+    outputFormat: "Flyer A4 print",
+    platform: "Impresion",
+    title: "Poster",
+    purpose: "crear un poster vertical premium para cine, evento, restaurante o campana impresa",
+    required: ["titulo", "subtitulo", "fecha", "lugar", "formato"],
+    styles: ["Cinematic Poster", "Luxury Gold", "Urban Dark", "Corporate Clean"],
+    uploadLabel: "Imagen base o referencia del poster"
+  }
+};
+
 function ratioFromSize(width, height) {
   const w = Number(width) || 1600;
   const h = Number(height) || 1000;
@@ -3027,14 +3106,30 @@ function ratioFromSize(width, height) {
   return `${Math.round(w / divisor)}:${Math.round(h / divisor)}`;
 }
 
-function buildFlyerAgentPrompt({ selectedFormat, selectedType, selectedStyle, ...form }) {
+function buildFlyerAgentPrompt({ selectedFormat, selectedType, selectedStyle, selectedMode, ...form }) {
   const size = `${form.customWidth || selectedFormat.width}x${form.customHeight || selectedFormat.height} ${form.customUnit || selectedFormat.unit}`;
   const aspectRatio = ratioFromSize(form.customWidth || selectedFormat.width, form.customHeight || selectedFormat.height);
+  const mode = selectedMode || flyerModePresets.Flyer;
   const textRule = form.includeText
     ? "Usar solo texto grande, claro y legible si es necesario; evitar texto pequeño o bloques largos."
     : "Sin texto dentro de la imagen, sin botones, sin letras aleatorias, sin logos; dejar espacio limpio para superponer textos desde la interfaz.";
+  const brief = [
+    form.prompt && `Idea exacta: ${form.prompt}`,
+    form.title && `Titulo principal: ${form.title}`,
+    form.secondaryText && `Texto secundario: ${form.secondaryText}`,
+    form.artistName && `Artista / marca: ${form.artistName}`,
+    form.musicTitle && `Titulo musical / producto: ${form.musicTitle}`,
+    form.genre && `Genero / categoria: ${form.genre}`,
+    form.hookText && `Gancho visual: ${form.hookText}`,
+    form.date && `Fecha: ${form.date}`,
+    form.place && `Lugar: ${form.place}`,
+    form.price && `Precio / oferta: ${form.price}`,
+    `Plataforma: ${form.platform || mode.platform}`
+  ].filter(Boolean).join(". ");
   const prompt = [
-    `Crear un ${selectedType.name.toLowerCase()} comercial premium para: ${form.title || "una campana promocional profesional"}.`,
+    `Crear un ${mode.title.toLowerCase()} premium para ${mode.purpose}.`,
+    brief,
+    `Tipo exacto: ${selectedType.name}.`,
     "El diseño debe verse como una campaña publicitaria de alto nivel: ultrarrealista, cinematográfico, moderno, elegante y visualmente impactante.",
     `Estilo visual: ${selectedStyle.name}, ${selectedStyle.direction}.`,
     `Público objetivo: ${form.targetAudience}.`,
@@ -3047,7 +3142,8 @@ function buildFlyerAgentPrompt({ selectedFormat, selectedType, selectedStyle, ..
   const negativePrompt = "baja calidad, borroso, pixelado, diseño amateur, composición confusa, texto aleatorio, palabras ilegibles, marca de agua, logo extra, rostro deformado, manos deformes, mala anatomía, personas duplicadas, tipografía fea, diseño saturado, sobreexpuesto, iluminación plana, caricatura, diseño infantil, flyer barato, plantilla genérica, personaje con copyright, parecido a celebridad real.";
   return {
     type: selectedType.name,
-    objective: "Crear una pieza publicitaria premium lista para campana comercial.",
+    mode: mode.title,
+    objective: `Crear ${mode.title.toLowerCase()} listo para uso comercial.`,
     audience: form.targetAudience,
     style: selectedStyle.name,
     colors: form.colors,
@@ -3067,13 +3163,39 @@ function buildFlyerAgentPrompt({ selectedFormat, selectedType, selectedStyle, ..
 
 function FlyerStudio({ actions, busyStudio, state }) {
   const [form, setForm] = useState(defaultForms.flyer);
+  const [mode, setMode] = useState("Flyer");
   const [agentResult, setAgentResult] = useState(null);
   const flyerJobs = (state.jobs || []).filter((job) => job.studio === "flyer" && job.userGenerated === true);
   const variants = Math.max(1, Math.min(4, Number(form.variants) || 1));
+  const modePreset = flyerModePresets[mode] || flyerModePresets.Flyer;
   const selectedFormat = flyerFormats.find((item) => item.name === form.outputFormat) || flyerFormats[0];
   const selectedType = flyerTypes.find((item) => item.name === form.designType) || flyerTypes[0];
   const selectedStyle = flyerStyles.find((item) => item.name === form.style) || flyerStyles[0];
+  const visibleTypes = flyerTypes.filter((item) => {
+    if (mode === "Miniatura") return ["Thumbnail YouTube", "Promo Comercial"].includes(item.name);
+    if (mode === "Cover") return ["Cover Musical", "Evento Privado"].includes(item.name);
+    if (mode === "Poster") return ["Poster Cine", "Restaurante / Food", "Evento Privado"].includes(item.name);
+    return ["Discoteca / Club", "Bar / Lounge", "Restaurante / Food", "Promo Comercial", "Evento Privado"].includes(item.name);
+  });
+  const visibleStyles = flyerStyles.filter((item) => modePreset.styles.includes(item.name));
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const selectMode = (nextMode) => {
+    const preset = flyerModePresets[nextMode] || flyerModePresets.Flyer;
+    const format = flyerFormats.find((entry) => entry.name === preset.outputFormat) || flyerFormats[0];
+    const style = preset.styles.includes(form.style) ? form.style : preset.styles[0];
+    setMode(nextMode);
+    setForm((current) => ({
+      ...current,
+      designType: preset.designType,
+      outputFormat: format.name,
+      platform: preset.platform,
+      style,
+      customWidth: format.width,
+      customHeight: format.height,
+      customUnit: format.unit
+    }));
+    setAgentResult(null);
+  };
   const applyFormat = (format) => setForm((current) => ({
     ...current,
     outputFormat: format.name,
@@ -3082,7 +3204,7 @@ function FlyerStudio({ actions, busyStudio, state }) {
     customUnit: format.unit
   }));
   const buildPrompt = () => {
-    const result = buildFlyerAgentPrompt({ ...form, selectedFormat, selectedType, selectedStyle });
+    const result = buildFlyerAgentPrompt({ ...form, selectedFormat, selectedType, selectedStyle, selectedMode: modePreset });
     setAgentResult(result);
     setForm((current) => ({ ...current, prompt: result.prompt, negative: result.negativePrompt }));
     return result;
@@ -3105,19 +3227,23 @@ function FlyerStudio({ actions, busyStudio, state }) {
         <button className="btn flyer-new" onClick={() => { setForm(defaultForms.flyer); setAgentResult(null); }}><Plus size={18} />Crear nuevo diseño</button>
       </section>
 
+      <nav className="flyer-mode-tabs" aria-label="Tipo de pieza">
+        {Object.keys(flyerModePresets).map((item) => <button className={mode === item ? "active" : ""} key={item} onClick={() => selectMode(item)}>{item}</button>)}
+      </nav>
+
       <div className="flyer-layout">
         <main className="flyer-main">
           <section className="flyer-band">
             <div className="section-head"><h2>Tipo de diseño</h2></div>
             <div className="flyer-type-grid">
-              {flyerTypes.map((item) => <button className={`flyer-choice ${form.designType === item.name ? "active" : ""}`} key={item.name} onClick={() => update("designType", item.name)}><img src={item.image} alt="" /><strong>{item.name}</strong></button>)}
+              {visibleTypes.map((item) => <button className={`flyer-choice ${form.designType === item.name ? "active" : ""}`} key={item.name} onClick={() => update("designType", item.name)}><img src={item.image} alt="" /><strong>{item.name}</strong></button>)}
             </div>
           </section>
 
           <section className="flyer-band">
             <div className="section-head"><h2>Estilos rápidos</h2></div>
             <div className="flyer-style-row">
-              {flyerStyles.map((item) => <button className={`flyer-style ${form.style === item.name ? "active" : ""}`} key={item.name} onClick={() => update("style", item.name)}><img src={item.image} alt="" /><strong>{item.name}</strong></button>)}
+              {visibleStyles.map((item) => <button className={`flyer-style ${form.style === item.name ? "active" : ""}`} key={item.name} onClick={() => update("style", item.name)}><img src={item.image} alt="" /><strong>{item.name}</strong></button>)}
             </div>
           </section>
 
@@ -3130,8 +3256,25 @@ function FlyerStudio({ actions, busyStudio, state }) {
         <aside className="flyer-side">
           <button className="btn full" onClick={buildPrompt}><Wand2 size={18} />Crear prompt profesional</button>
           <section className="card flyer-agent-card">
-            <h2>Prompt inteligente</h2>
-            <div className="field"><label>Describe tu idea</label><textarea className="textarea compact-textarea" value={form.title} onChange={(event) => update("title", event.target.value)} placeholder="Ej: Flyer para fiesta de reggaeton en discoteca..." /></div>
+            <h2>{modePreset.title}</h2>
+            <p className="muted">Campos clave: {modePreset.required.join(", ")}.</p>
+            <div className="field"><label>Idea principal</label><textarea className="textarea compact-textarea" value={form.prompt} onChange={(event) => update("prompt", event.target.value)} placeholder="Describe exactamente lo que quieres producir." /></div>
+            <div className="field"><label>Título principal</label><input className="input" value={form.title} onChange={(event) => update("title", event.target.value)} /></div>
+            <div className="field"><label>Texto secundario</label><input className="input" value={form.secondaryText} onChange={(event) => update("secondaryText", event.target.value)} placeholder="Fecha, llamada a la acción o subtítulo" /></div>
+            <div className="field"><label>Plataforma</label><select className="select" value={form.platform} onChange={(event) => update("platform", event.target.value)}>{["YouTube", "Spotify", "Instagram", "TikTok", "Facebook", "Impresión", "Web"].map((item) => <option key={item}>{item}</option>)}</select></div>
+            {mode === "Miniatura" && <div className="field"><label>Gancho visual</label><input className="input" value={form.hookText} onChange={(event) => update("hookText", event.target.value)} placeholder="Antes/despues, misterio, reaccion, resultado extremo" /></div>}
+            {mode === "Cover" && <>
+              <div className="field"><label>Artista / marca</label><input className="input" value={form.artistName} onChange={(event) => update("artistName", event.target.value)} /></div>
+              <div className="field"><label>Titulo musical</label><input className="input" value={form.musicTitle} onChange={(event) => update("musicTitle", event.target.value)} /></div>
+              <div className="field"><label>Genero / mood</label><input className="input" value={form.genre} onChange={(event) => update("genre", event.target.value)} placeholder="Trap, bachata, afrobeat, sad, lujo, calle" /></div>
+            </>}
+            {["Flyer", "Poster"].includes(mode) && <>
+              <div className="field"><label>Fecha</label><input className="input" value={form.date} onChange={(event) => update("date", event.target.value)} /></div>
+              <div className="field"><label>Lugar</label><input className="input" value={form.place} onChange={(event) => update("place", event.target.value)} /></div>
+              <div className="field"><label>Precio / oferta</label><input className="input" value={form.price} onChange={(event) => update("price", event.target.value)} /></div>
+            </>}
+            <MarketingFile label={modePreset.uploadLabel} field="primaryImage" accept="image/*" value={form.primaryImage} onChange={(key, file) => setForm((current) => ({ ...current, [key]: file ? file.name : "", __files: { ...(current.__files || {}), [key]: file } }))} />
+            <MarketingFile label="Referencia opcional" field="referenceImage" accept="image/*" value={form.referenceImage} onChange={(key, file) => setForm((current) => ({ ...current, [key]: file ? file.name : "", __files: { ...(current.__files || {}), [key]: file } }))} />
             <div className="field"><label>Formato de salida</label><div className="flyer-format-grid">{flyerFormats.map((item) => <button className={`format-tile ${form.outputFormat === item.name ? "active" : ""}`} title={`${item.name}: ${item.label}`} key={item.name} onClick={() => applyFormat(item)}><span>{item.short}</span><small>{item.name}</small></button>)}</div></div>
             <div className="custom-size-row">
               <div className="field"><label>Ancho</label><input className="input" type="number" value={form.customWidth} onChange={(event) => update("customWidth", event.target.value)} /></div>
@@ -3364,7 +3507,12 @@ function Projects({ state, actions, mode }) {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
   const [draft, setDraft] = useState({ title: "", type: "Video", quality: "Pendiente" });
-  const projects = (state.projects || []).filter((project) => project.title.toLowerCase().includes(filter.toLowerCase()));
+  const [productionProjects, setProductionProjects] = useState([]);
+  useEffect(() => {
+    if (isGallery || !state.auth?.signedIn) return;
+    apiRequest("/api/production/projects").then((result) => setProductionProjects(result.projects || [])).catch(() => setProductionProjects([]));
+  }, [isGallery, state.auth?.signedIn]);
+  const projects = [...productionProjects, ...(state.projects || [])].filter((project) => String(project.title || "").toLowerCase().includes(filter.toLowerCase()));
   const galleryItems = (state.history || []).filter((item) => item.userGenerated === true);
   const submit = () => {
     const ok = actions.createProject(draft);
@@ -3381,7 +3529,7 @@ function Projects({ state, actions, mode }) {
 
 function ProjectGrid({ projects = [], actions }) {
   if (!projects.length) return <EmptyState title="Sin proyectos" body="Crea tu primer proyecto para empezar a organizar generaciones, assets y exportaciones." action="Crear proyecto" onAction={() => actions.navigate("projects")} />;
-  return <section className="grid project-grid">{projects.map((project, index) => <div className="card project-card" key={project.id}><img className="asset-img" src={studioCardAssets[project.type?.toLowerCase()?.replace(" ", "")] || heroSlides[index % heroSlides.length]} alt={project.title} loading="lazy" decoding="async" /><div className="body"><strong>{project.title}</strong><p className="muted">{project.type} - {project.quality} - {new Date(project.createdAt).toLocaleDateString("es-ES")}</p><div className="toolbar"><button className="btn secondary" onClick={() => actions.modal({ title: project.title, body: JSON.stringify(project, null, 2) })}>Abrir</button><button className="btn secondary" aria-label={`Descargar proyecto ${project.title}`} onClick={() => actions.download(`${project.title}.json`, project)}><Download size={16} /></button><button className="btn secondary" aria-label={`Eliminar proyecto ${project.title}`} onClick={() => actions.deleteProject(project.id)}><Trash2 size={16} /></button></div></div></div>)}</section>;
+  return <section className="grid project-grid">{projects.map((project, index) => { const isProduction = Boolean(project.jobId); return <div className="card project-card" key={project.id}><img className="asset-img" src={studioCardAssets[project.type?.toLowerCase()?.replace(" ", "")] || heroSlides[index % heroSlides.length]} alt={project.title} loading="lazy" decoding="async" /><div className="body"><strong>{project.title}</strong><p className="muted">{project.type} · {project.status || project.quality} · {Number(project.progress || 0)}% · {new Date(project.createdAt).toLocaleDateString("es-ES")}</p><div className="toolbar"><button className="btn secondary" onClick={() => actions.modal({ title: project.title, body: JSON.stringify(project, null, 2) })}>Abrir</button>{isProduction && <button className="btn secondary" onClick={async () => { try { const result = await apiRequest(`/api/production/projects/${project.id}/send-to-editor`, { method: "POST", body: "{}" }); actions.notify("Proyecto enviado al editor."); window.location.assign(result.redirectUrl); } catch (error) { actions.notify(error.message); } }}>Editar</button>}<button className="btn secondary" aria-label={`Descargar proyecto ${project.title}`} onClick={() => actions.download(`${project.title}.json`, project)}><Download size={16} /></button>{!isProduction && <button className="btn secondary" aria-label={`Eliminar proyecto ${project.title}`} onClick={() => actions.deleteProject(project.id)}><Trash2 size={16} /></button>}</div></div></div>; })}</section>;
 }
 
 function GenerationGallery({ items = [], actions }) {
@@ -3517,6 +3665,7 @@ function HelpNative({ actions }) {
 function MarketingNative({ actions, state }) {
   const [form, setForm] = useState(defaultForms.marketing);
   const [brief, setBrief] = useState(null);
+  const [tab, setTab] = useState("Estrategia");
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
   const updateFile = (key, file) => setForm((current) => ({
     ...current,
@@ -3541,7 +3690,8 @@ function MarketingNative({ actions, state }) {
   };
   return (
     <div className="marketing-native">
-      <section className="card form marketing-brief">
+      <nav className="marketing-tabs" aria-label="Flujo de Marketing Studio">{["Estrategia", "Creatividades", "Video", "Campaña", "Entregables"].map((item) => <button className={tab === item ? "active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
+      <section className={`card form marketing-brief ${tab !== "Estrategia" ? "is-hidden" : ""}`}>
         <div className="section-head compact-head">
           <div>
             <h2>Marketing Studio</h2>
@@ -3561,7 +3711,7 @@ function MarketingNative({ actions, state }) {
         </div>
         <div className="field"><label>Guion / direccion creativa <span className="label-meta"><RequiredBadge required />{form.prompt.length}/4000</span></label><textarea className="textarea marketing-script" maxLength={4000} value={form.prompt} onChange={(e) => update("prompt", e.target.value)} placeholder="Pega aqui el guion, oferta, escena, texto de venta o idea exacta que quieres producir." /><small className="field-help">Este texto se manda como direccion principal. El agente lo analiza para decidir imagen, video, voz, musica, edicion y formato.</small></div>
       </section>
-      <section className="card form marketing-assets">
+      <section className={`card form marketing-assets ${tab !== "Creatividades" ? "is-hidden" : ""}`}>
         <h2>Assets de entrada</h2>
         <div className="grid form-grid">
           <MarketingFile label="Foto del producto" field="productImage" accept="image/*" value={form.productImage} onChange={updateFile} />
@@ -3579,7 +3729,7 @@ function MarketingNative({ actions, state }) {
           <button className="btn secondary" onClick={() => actions.copy(marketingPromptFor(form))}>Copiar prompt final</button>
         </div>
       </section>
-      <section className="card marketing-plan">
+      <section className={`card marketing-plan ${tab !== "Campaña" ? "is-hidden" : ""}`}>
         <h2>Agente experto en marketing</h2>
         <p className="muted">Ruta automatica elegida por el sistema segun guion, assets, formato y objetivo comercial.</p>
         {(brief || marketingPlanFor(form)).steps.map((step) => (
@@ -3590,12 +3740,12 @@ function MarketingNative({ actions, state }) {
           </div>
         ))}
       </section>
-      <section className="card marketing-output">
+      <section className={`card marketing-output ${tab !== "Entregables" ? "is-hidden" : ""}`}>
         <h2>Entregables</h2>
         {["Video promocional con audio", "Miniatura / cover", "Flyer o poster", "Copy de venta", "Prompts y metadata", "Assets descargables"].map((item) => <div className="check-row" key={item}><Check size={18} />{item}</div>)}
         <button className="btn secondary full" onClick={() => actions.download("marketing-plan.json", brief || marketingPlanFor(form))}>Descargar plan</button>
       </section>
-      <section className="card marketing-output">
+      <section className={`card marketing-output ${!["Video", "Creatividades", "Entregables"].includes(tab) ? "is-hidden" : ""}`}>
         <h2>Vista previa y resultados</h2>
         <NativeStudioPanel studio="marketing" state={state} actions={actions} form={form} />
       </section>
