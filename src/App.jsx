@@ -295,6 +295,314 @@ function themeClass(theme) {
   return `theme-${String(theme || "dark").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 
+const dashboardI18n = {
+  en: {
+    "MAIN": "MAIN",
+    "AI STUDIOS": "AI STUDIOS",
+    "SYSTEM": "SYSTEM",
+    "Dashboard": "Dashboard",
+    "Proyectos": "Projects",
+    "Historial y Galeria": "History and Gallery",
+    "Centro de Studios IA": "AI Studios Hub",
+    "Narrativa y Voz": "Narrative and Voice",
+    "Analizador YouTube": "YouTube Analyzer",
+    "Marketing": "Marketing",
+    "Public Website": "Public Website",
+    "Security Center": "Security Center",
+    "Assets Library": "Assets Library",
+    "Voice Library": "Voice Library",
+    "Usuarios": "Users",
+    "My Models": "My Models",
+    "API Collection": "API Collection",
+    "API Keys": "API Keys",
+    "Generation Process": "Generation Process",
+    "Papelera": "Trash",
+    "Deployment": "Deployment",
+    "Checklist Final": "Final Checklist",
+    "Windows Launcher": "Windows Launcher",
+    "Settings": "Settings",
+    "Billing": "Billing",
+    "Help & Support": "Help & Support",
+    "AI Engine Admin": "AI Engine Admin",
+    "Admin": "Admin",
+    "Usuario": "User",
+    "Activo": "Active",
+    "Sesion cerrada": "Signed out",
+    "Panel local limpio, listo para crear el primer proyecto.": "Clean local panel, ready to create the first project.",
+    "Proyectos": "Projects",
+    "creados en local": "created locally",
+    "Preferencias": "Preferences",
+    "Idioma": "Language",
+    "Tema": "Theme",
+    "Los cambios se aplican al panel completo y quedan guardados localmente.": "Changes apply to the full dashboard and are saved locally.",
+    "Sesion": "Session",
+    "Sesión": "Session",
+    "La sesión activa controla qué paneles privados ve cada usuario.": "The active session controls which private panels each user can see.",
+    "Salir de la sesión": "Sign out",
+    "Seguridad": "Security",
+    "Las API keys viven solo en servidor. Los paneles API, Security, Deployment y Admin se ocultan para usuarios normales.": "API keys live only on the server. API, Security, Deployment and Admin panels are hidden for regular users.",
+    "Bloqueo temporal por IP activo": "Temporary IP lock active",
+    "Clave MuAPI fuera del navegador": "MuAPI key kept outside the browser",
+    "Cookie HttpOnly de sesión": "HttpOnly session cookie",
+    "Validación de entradas antes de llamar a proveedores": "Input validation before calling providers",
+    "Buscar proyectos, archivos y herramientas...": "Search projects, files and tools...",
+    "Abrir notificaciones": "Open notifications",
+    "Contraer menu": "Collapse menu",
+    "Expandir menu lateral": "Expand sidebar",
+    "Contraer menu lateral": "Collapse sidebar",
+    "Generar": "Generate",
+    "Guardar proyecto": "Save project",
+    "Descargar": "Download",
+    "Historial": "History",
+    "Duplicar": "Duplicate",
+    "Limpiar formulario": "Clear form",
+    "Salir": "Sign out",
+    "Iniciar sesion": "Sign in",
+    "Iniciar sesión": "Sign in",
+    "Correo": "Email",
+    "Contraseña": "Password",
+    "Proveedor seguro": "Secure provider",
+    "Proveedor": "Provider",
+    "Estado": "Status",
+    "Probar conexion": "Test connection",
+    "Exportar plantilla": "Export template",
+    "Crear": "Create",
+    "Abrir": "Open",
+    "Editar": "Edit",
+    "Borrar": "Delete",
+    "Restaurar": "Restore",
+    "Buscar": "Search",
+    "Enviar ticket": "Send ticket",
+    "Temas populares": "Popular topics"
+  },
+  pt: {
+    "MAIN": "PRINCIPAL",
+    "AI STUDIOS": "ESTUDIOS IA",
+    "SYSTEM": "SISTEMA",
+    "Dashboard": "Painel",
+    "Proyectos": "Projetos",
+    "Historial y Galeria": "Historico e Galeria",
+    "Centro de Studios IA": "Centro de Estudios IA",
+    "Narrativa y Voz": "Narrativa e Voz",
+    "Analizador YouTube": "Analisador YouTube",
+    "Usuarios": "Usuarios",
+    "Papelera": "Lixeira",
+    "Settings": "Configuracoes",
+    "Billing": "Faturamento",
+    "Help & Support": "Ajuda e Suporte",
+    "Admin": "Administrador",
+    "Usuario": "Usuario",
+    "Activo": "Ativo",
+    "Sesion cerrada": "Sessao encerrada",
+    "Panel local limpio, listo para crear el primer proyecto.": "Painel local limpo, pronto para criar o primeiro projeto.",
+    "Preferencias": "Preferencias",
+    "Idioma": "Idioma",
+    "Tema": "Tema",
+    "Los cambios se aplican al panel completo y quedan guardados localmente.": "As alteracoes se aplicam a todo o painel e ficam salvas localmente.",
+    "Sesión": "Sessao",
+    "Sesion": "Sessao",
+    "Seguridad": "Seguranca",
+    "Buscar proyectos, archivos y herramientas...": "Buscar projetos, arquivos e ferramentas...",
+    "Generar": "Gerar",
+    "Guardar proyecto": "Salvar projeto",
+    "Descargar": "Baixar",
+    "Historial": "Historico",
+    "Duplicar": "Duplicar",
+    "Limpiar formulario": "Limpar formulario",
+    "Salir": "Sair",
+    "Iniciar sesion": "Entrar",
+    "Iniciar sesión": "Entrar",
+    "Contraseña": "Senha",
+    "Proveedor": "Fornecedor",
+    "Estado": "Estado",
+    "Buscar": "Buscar",
+    "Abrir": "Abrir",
+    "Editar": "Editar",
+    "Borrar": "Excluir",
+    "Restaurar": "Restaurar"
+  },
+  fr: {
+    "MAIN": "PRINCIPAL",
+    "AI STUDIOS": "STUDIOS IA",
+    "SYSTEM": "SYSTEME",
+    "Dashboard": "Tableau de bord",
+    "Proyectos": "Projets",
+    "Historial y Galeria": "Historique et Galerie",
+    "Centro de Studios IA": "Centre des Studios IA",
+    "Narrativa y Voz": "Narration et Voix",
+    "Analizador YouTube": "Analyseur YouTube",
+    "Usuarios": "Utilisateurs",
+    "Papelera": "Corbeille",
+    "Settings": "Parametres",
+    "Billing": "Facturation",
+    "Help & Support": "Aide et Support",
+    "Admin": "Admin",
+    "Usuario": "Utilisateur",
+    "Activo": "Actif",
+    "Sesion cerrada": "Session fermee",
+    "Panel local limpio, listo para crear el primer proyecto.": "Tableau local propre, pret a creer le premier projet.",
+    "Preferencias": "Preferences",
+    "Idioma": "Langue",
+    "Tema": "Theme",
+    "Los cambios se aplican al panel completo y quedan guardados localmente.": "Les changements s'appliquent a tout le tableau et sont enregistres localement.",
+    "Sesión": "Session",
+    "Sesion": "Session",
+    "Seguridad": "Securite",
+    "Buscar proyectos, archivos y herramientas...": "Rechercher projets, fichiers et outils...",
+    "Generar": "Generer",
+    "Guardar proyecto": "Enregistrer le projet",
+    "Descargar": "Telecharger",
+    "Historial": "Historique",
+    "Duplicar": "Dupliquer",
+    "Limpiar formulario": "Nettoyer le formulaire",
+    "Salir": "Sortir",
+    "Iniciar sesion": "Se connecter",
+    "Iniciar sesión": "Se connecter",
+    "Contraseña": "Mot de passe",
+    "Proveedor": "Fournisseur",
+    "Estado": "Etat",
+    "Buscar": "Rechercher",
+    "Abrir": "Ouvrir",
+    "Editar": "Modifier",
+    "Borrar": "Supprimer",
+    "Restaurar": "Restaurer"
+  },
+  it: {
+    "MAIN": "PRINCIPALE",
+    "AI STUDIOS": "STUDI IA",
+    "SYSTEM": "SISTEMA",
+    "Dashboard": "Pannello",
+    "Proyectos": "Progetti",
+    "Historial y Galeria": "Cronologia e Galleria",
+    "Centro de Studios IA": "Centro Studi IA",
+    "Narrativa y Voz": "Narrativa e Voce",
+    "Analizador YouTube": "Analizzatore YouTube",
+    "Usuarios": "Utenti",
+    "Papelera": "Cestino",
+    "Settings": "Impostazioni",
+    "Billing": "Fatturazione",
+    "Help & Support": "Aiuto e Supporto",
+    "Admin": "Admin",
+    "Usuario": "Utente",
+    "Activo": "Attivo",
+    "Sesion cerrada": "Sessione chiusa",
+    "Panel local limpio, listo para crear el primer proyecto.": "Pannello locale pulito, pronto per creare il primo progetto.",
+    "Preferencias": "Preferenze",
+    "Idioma": "Lingua",
+    "Tema": "Tema",
+    "Los cambios se aplican al panel completo y quedan guardados localmente.": "Le modifiche si applicano a tutto il pannello e vengono salvate localmente.",
+    "Sesión": "Sessione",
+    "Sesion": "Sessione",
+    "Seguridad": "Sicurezza",
+    "Buscar proyectos, archivos y herramientas...": "Cerca progetti, file e strumenti...",
+    "Generar": "Genera",
+    "Guardar proyecto": "Salva progetto",
+    "Descargar": "Scarica",
+    "Historial": "Cronologia",
+    "Duplicar": "Duplica",
+    "Limpiar formulario": "Pulisci modulo",
+    "Salir": "Esci",
+    "Iniciar sesion": "Accedi",
+    "Iniciar sesión": "Accedi",
+    "Contraseña": "Password",
+    "Proveedor": "Fornitore",
+    "Estado": "Stato",
+    "Buscar": "Cerca",
+    "Abrir": "Apri",
+    "Editar": "Modifica",
+    "Borrar": "Elimina",
+    "Restaurar": "Ripristina"
+  },
+  de: {
+    "MAIN": "HAUPT",
+    "AI STUDIOS": "KI STUDIOS",
+    "SYSTEM": "SYSTEM",
+    "Dashboard": "Dashboard",
+    "Proyectos": "Projekte",
+    "Historial y Galeria": "Verlauf und Galerie",
+    "Centro de Studios IA": "KI Studio-Zentrale",
+    "Narrativa y Voz": "Narration und Stimme",
+    "Analizador YouTube": "YouTube-Analyse",
+    "Usuarios": "Benutzer",
+    "Papelera": "Papierkorb",
+    "Settings": "Einstellungen",
+    "Billing": "Abrechnung",
+    "Help & Support": "Hilfe und Support",
+    "Admin": "Admin",
+    "Usuario": "Benutzer",
+    "Activo": "Aktiv",
+    "Sesion cerrada": "Abgemeldet",
+    "Panel local limpio, listo para crear el primer proyecto.": "Sauberes lokales Panel, bereit fuer das erste Projekt.",
+    "Preferencias": "Einstellungen",
+    "Idioma": "Sprache",
+    "Tema": "Design",
+    "Los cambios se aplican al panel completo y quedan guardados localmente.": "Aenderungen gelten fuer das gesamte Dashboard und werden lokal gespeichert.",
+    "Sesión": "Sitzung",
+    "Sesion": "Sitzung",
+    "Seguridad": "Sicherheit",
+    "Buscar proyectos, archivos y herramientas...": "Projekte, Dateien und Werkzeuge suchen...",
+    "Generar": "Generieren",
+    "Guardar proyecto": "Projekt speichern",
+    "Descargar": "Herunterladen",
+    "Historial": "Verlauf",
+    "Duplicar": "Duplizieren",
+    "Limpiar formulario": "Formular leeren",
+    "Salir": "Abmelden",
+    "Iniciar sesion": "Anmelden",
+    "Iniciar sesión": "Anmelden",
+    "Contraseña": "Passwort",
+    "Proveedor": "Anbieter",
+    "Estado": "Status",
+    "Buscar": "Suchen",
+    "Abrir": "Oeffnen",
+    "Editar": "Bearbeiten",
+    "Borrar": "Loeschen",
+    "Restaurar": "Wiederherstellen"
+  }
+};
+
+function dashboardTranslate(language, value) {
+  const source = String(value || "").replace(/\s+/g, " ").trim();
+  if (!source || language === "es") return source;
+  return dashboardI18n[language]?.[source] || source;
+}
+
+function applyDashboardLanguage(language) {
+  if (typeof document === "undefined") return;
+  const root = document.querySelector(".app");
+  if (!root) return;
+  root.lang = language || "es";
+  const blocked = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "SELECT", "OPTION"]);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || blocked.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+      if (!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    const parent = node.parentElement;
+    const original = parent.dataset.i18nSource || node.nodeValue.trim();
+    parent.dataset.i18nSource = original;
+    const translated = dashboardTranslate(language, original);
+    if (translated && translated !== node.nodeValue.trim()) node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), translated);
+  });
+  root.querySelectorAll("[placeholder],[aria-label],[title]").forEach((element) => {
+    ["placeholder", "aria-label", "title"].forEach((attribute) => {
+      const current = element.getAttribute(attribute);
+      if (!current) return;
+      const dataKey = `i18n${attribute.replace(/(^|-)([a-z])/g, (_match, _sep, letter) => letter.toUpperCase())}`;
+      const original = element.dataset[dataKey] || current.trim();
+      element.dataset[dataKey] = original;
+      const translated = dashboardTranslate(language, original);
+      if (translated) element.setAttribute(attribute, translated);
+    });
+  });
+}
+
 function useAppState() {
   const [state, setState] = useState(loadState);
   useEffect(() => saveState(state), [state]);
@@ -1045,6 +1353,11 @@ function StudioApp({ initialActive }) {
   const navigate = useNavigate();
   const location = useLocation();
   const t = translations[state.language] || translations.es;
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => applyDashboardLanguage(state.language));
+    return () => cancelAnimationFrame(frame);
+  }, [state.language, state.active, state.sidebar, state.auth?.signedIn, state.auth?.role, modal, toast]);
 
   useEffect(() => {
     const pathPanel = location.pathname.startsWith("/app/") ? decodeURIComponent(location.pathname.split("/app/")[1] || "") : "";
