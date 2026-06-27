@@ -3680,11 +3680,6 @@ function NarrativeStudio({ actions, busyStudio, state }) {
     }).catch(() => setVoices(omnivoiceVoices));
     apiRequest("/api/omnivoice/status").then(setOmniStatus).catch((error) => setOmniStatus({ ok: false, connected: false, message: error.message }));
   }, []);
-  const generate = async () => {
-    if (!form.prompt.trim()) return actions.notify("Escribe o pega la narrativa antes de generar voz.");
-    await actions.createJob("narrative", { ...form, prompt: form.prompt.slice(0, Number(form.maxCharacters || 10000)) });
-    setText(`Narrativa preparada para voz:\n\n${form.prompt}`);
-  };
   const generateOmnivoice = async () => {
     if (!form.prompt.trim()) return actions.notify("Escribe o pega la narrativa antes de generar voz.");
     const safePrompt = form.prompt.slice(0, Number(form.maxCharacters || 10000));
@@ -3714,47 +3709,26 @@ function NarrativeStudio({ actions, busyStudio, state }) {
     <div className="layout-2">
       <section className="card form narrative-form">
         <h1>NARRATIVA Y VOZ</h1>
-        <p className="muted">Generador de narracion profesional con OmniVoice local/remoto y modelos MuAPI compatibles.</p>
-        <div className="omnivoice-panel">
-          <div>
-            <strong>OmniVoice Studio</strong>
-            <p className="muted">{omniStatus?.connected ? "Motor conectado." : (omniStatus?.message || "Comprobando motor OmniVoice...")}</p>
-          </div>
-          <span className={`status-pill ${omniStatus?.connected ? "ok" : "warn"}`}>{omniStatus?.connected ? "Activo" : "Requiere backend"}</span>
-        </div>
+        <div className="omnivoice-panel"><strong>OmniVoice Studio</strong><span className={`status-pill ${omniStatus?.connected ? "ok" : "warn"}`}>{omniStatus?.connected ? "Activo" : "Sin conectar"}</span></div>
         <div className="field">
-          <label>Voz principal OmniVoice</label>
+          <label>Voz</label>
           <select className="select" value={form.voiceModel} onChange={(event) => setForm((current) => ({ ...current, voiceModel: event.target.value }))}>
-            {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name} - {voice.engine}</option>)}
+            {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}
           </select>
         </div>
         <div className="voice-mini-card">
-          <Waveform />
-          <div>
-            <strong>{selectedVoice.name}</strong>
-            <span>{selectedVoice.language} - {selectedVoice.engine} - seed {selectedVoice.seed}</span>
-            <p className="muted">{selectedVoice.sourceText}</p>
-          </div>
+          <Waveform /><strong>{selectedVoice.name}</strong><span>{selectedVoice.engine} - {selectedVoice.sampleRateHz} Hz</span>
         </div>
-        <DynamicForm studio="narrative" form={form} setForm={setForm} model={getMuapiModelById(form.model)} />
+        <div className="field"><label>Formato</label><select className="select" value={form.format} onChange={(event) => setForm((current) => ({ ...current, format: event.target.value }))}><option value="wav">WAV</option><option value="mp3">MP3</option></select></div>
+        <div className="field"><label>Texto</label><textarea className="textarea script-box" maxLength={10000} value={text || form.prompt} onChange={(event) => { setText(event.target.value); setForm((current) => ({ ...current, prompt: event.target.value })); }} placeholder="Pega aqui la narrativa para convertirla en audio." /></div>
         <div className="toolbar">
-          <button className="btn" disabled={omniBusy} onClick={generateOmnivoice}><Mic2 size={18} />{omniBusy ? "Generando..." : "Generar con OmniVoice"}</button>
-          <button className="btn secondary" disabled={busyStudio === "narrative"} onClick={generate}><Mic2 size={18} />Generar con MuAPI</button>
+          <button className="btn" disabled={omniBusy} onClick={generateOmnivoice}><Mic2 size={18} />{omniBusy ? "Generando..." : "Crear audio"}</button>
+          <button className="btn secondary" onClick={() => { setText(""); setForm(defaultForms.narrative); setOmniResult(null); }}>Limpiar</button>
         </div>
       </section>
       <section className="card">
-        <h2>Texto de trabajo</h2>
-        <textarea className="textarea script-box" maxLength={10000} value={text || form.prompt} onChange={(event) => { setText(event.target.value); setForm((current) => ({ ...current, prompt: event.target.value })); }} placeholder="Pega aqui hasta 10.000 caracteres de narrativa." />
-        <div className="toolbar">
-          <button className="btn secondary" onClick={() => actions.copy(text || form.prompt)}>Copiar</button>
-          <button className="btn secondary" onClick={() => actions.download("narrativa-voz.json", cleanFormForStorage(form))}>Descargar metadata</button>
-        </div>
-      </section>
-      <section className="card">
-        <h2>Resultados de voz</h2>
-        {omniResult?.audio?.url && <div className="voice-result"><audio controls src={apiAssetUrl(omniResult.audio.url)} /><button className="btn secondary" onClick={() => window.open(apiAssetUrl(omniResult.audio.url), "_blank", "noopener,noreferrer")}>Abrir audio</button></div>}
-        {omniResult?.ok === false && <p className="muted">{omniResult.message}</p>}
-        <NativeStudioPanel studio="narrative" state={state} actions={actions} form={form} />
+        <h2>Audio</h2>
+        {omniResult?.audio?.url ? <div className="voice-result"><audio controls src={apiAssetUrl(omniResult.audio.url)} /><div className="toolbar"><a className="btn secondary" href={apiAssetUrl(omniResult.audio.url)} download={omniResult.audio.filename || "omnivoice.wav"}>Descargar</a><button className="btn secondary" onClick={() => actions.download("omnivoice-audio.json", { voice: selectedVoice, audio: omniResult.audio })}>Metadata</button></div></div> : <p className="muted">{omniResult?.message || "El audio generado aparecera aqui."}</p>}
       </section>
     </div>
   );
@@ -3989,7 +3963,7 @@ function ApiKeysNative({ actions }) {
 }
 
 function OmnivoiceLibraryNative({ actions }) {
-  return <div className="voice-library"><section className="card voice-hero"><Mic2 size={42} /><div><h2>Biblioteca de voces OmniVoice</h2><p className="muted">Voces principales cargadas desde el registro CSV para narrativa, documentales y produccion audiovisual.</p></div><button className="btn" onClick={() => actions.navigate("narrative")}>Crear voz</button></section><section className="grid voice-grid">{omnivoiceVoices.map((voice) => <div className="card voice-card" key={voice.id}><Waveform /><strong>{voice.name}</strong><span>{voice.engine} - {voice.mode} - seed {voice.seed}</span><p className="muted">{voice.language} - {voice.sampleRateHz} Hz - {voice.fileName}</p><p className="muted">{voice.sourceText}</p><div className="toolbar compact"><button className="btn secondary" onClick={() => actions.modal({ title: voice.name, body: `${voice.sourceText}\n\nFamilia: ${voice.familyId}\nNota: ${voice.note}` })}>Preview</button><button className="btn secondary" onClick={() => { localStorage.setItem("nexframe-omnivoice-selected", voice.id); actions.navigate("narrative"); actions.notify(`${voice.name} seleccionada para narrativa.`); }}>Usar</button></div></div>)}</section></div>;
+  return <div className="voice-library"><section className="card voice-hero compact-voice-hero"><Mic2 size={36} /><div><h2>Voces OmniVoice</h2><p className="muted">{omnivoiceVoices.length} voces principales listas para narrativa.</p></div><button className="btn" onClick={() => actions.navigate("narrative")}>Crear audio</button></section><section className="grid voice-grid">{omnivoiceVoices.map((voice) => <div className="card voice-card compact-voice-card" key={voice.id}><strong>{voice.name}</strong><span>{voice.engine} - {voice.sampleRateHz} Hz</span><div className="toolbar compact"><button className="btn secondary" onClick={() => { localStorage.setItem("nexframe-omnivoice-selected", voice.id); actions.navigate("narrative"); actions.notify(`${voice.name} seleccionada.`); }}>Usar</button></div></div>)}</section></div>;
 }
 
 function BillingNative({ state, actions }) {
