@@ -13,6 +13,7 @@ import {
 import {
   getMuapiModelById, getMuapiModelsForStudio, muapiRegistry
 } from "./data/models-registry";
+import { getOmnivoiceVoiceById, omnivoiceVoices } from "./data/omnivoice-voices";
 import { pollJob } from "./lib/pollJob";
 import { normalizeGenerationResponse } from "./lib/useGeneration";
 import { downloadBlob, downloadJson, loadState, makeJob, makeProject, saveState } from "./lib/store";
@@ -150,7 +151,7 @@ const defaultForms = {
     soundtrackStyle: "Usar cancion subida",
     beatCuts: "Cortes al beat"
   },
-  narrative: { prompt: "", model: "minimax-speech-2.6-hd", voiceStyle: "Narrador grave documental", language: "Espanol", format: "mp3", maxCharacters: 10000 },
+  narrative: { prompt: "", model: "minimax-speech-2.6-hd", voiceStyle: "Narrador grave documental", voiceModel: "prueba-espanol-01-documental", language: "Espanol", format: "wav", maxCharacters: 10000 },
   youtube: { channelUrl: "", objective: "Detectar nicho documental rentable", duration: "35-40 min", tone: "Codigo Blanco broadcast", target: "YouTube documental 16:9" },
   flyer: { prompt: "", model: "nano-banana", title: "", secondaryText: "", platform: "Instagram", date: "", place: "", price: "", artistName: "", musicTitle: "", genre: "", hookText: "", style: "Nightclub Neon", designType: "Discoteca / Club", outputFormat: "Instagram 4:5", targetAudience: "Jovenes 18-35", colors: "rojo, dorado, negro", detailLevel: 82, variants: 4, customWidth: 1080, customHeight: 1350, customUnit: "px", includeText: false, useReference: false },
   marketing: {
@@ -2463,8 +2464,8 @@ const documentarySelects = {
   scriptModel: ["gpt-4.1-documentary-script", "o3-documentary-research", "auto-mejor-modelo"],
   imageModel: ["nano-banana", "gpt-image-2", "kolors-v3", "midjourney-style"],
   videoModel: ["seedance-lite-t2v", "veo3.1-lite-text-to-video", "veo3.1-text-to-video", "kling-v3.0-pro", "runway-aleph", "auto-mejor-video"],
-  voiceProvider: ["Level Up", "OpenAI TTS", "ElevenLabs", "Auto"],
-  voiceModel: ["narrador-grave-documental", "voz-broadcast-latina", "voz-cine-profunda", "voz-neutral-profesional"],
+  voiceProvider: ["OmniVoice Studio", "Level Up", "OpenAI TTS", "ElevenLabs", "Auto"],
+  voiceModel: omnivoiceVoices.map((voice) => voice.id),
   audioModel: ["suno-create-music", "udio-cinematic", "auto-mejor-musica"],
   subtitles: ["Subtitulos cinematicos", "Subtitulos YouTube", "Sin subtitulos"],
   exportFormat: ["MP4 H.264", "MP4 H.265", "Project Pack ZIP"]
@@ -3666,18 +3667,80 @@ function FlyerStudio({ actions, busyStudio, state }) {
 function NarrativeStudio({ actions, busyStudio, state }) {
   const [form, setForm] = useState(defaultForms.narrative);
   const [text, setText] = useState("");
+  const [voices, setVoices] = useState(omnivoiceVoices);
+  const [omniStatus, setOmniStatus] = useState(null);
+  const [omniBusy, setOmniBusy] = useState(false);
+  const [omniResult, setOmniResult] = useState(null);
+  const selectedVoice = getOmnivoiceVoiceById(form.voiceModel);
+  useEffect(() => {
+    const savedVoice = localStorage.getItem("nexframe-omnivoice-selected");
+    if (savedVoice) setForm((current) => ({ ...current, voiceModel: savedVoice }));
+    apiRequest("/api/omnivoice/voices").then((result) => {
+      if (Array.isArray(result.voices) && result.voices.length) setVoices(result.voices);
+    }).catch(() => setVoices(omnivoiceVoices));
+    apiRequest("/api/omnivoice/status").then(setOmniStatus).catch((error) => setOmniStatus({ ok: false, connected: false, message: error.message }));
+  }, []);
   const generate = async () => {
     if (!form.prompt.trim()) return actions.notify("Escribe o pega la narrativa antes de generar voz.");
     await actions.createJob("narrative", { ...form, prompt: form.prompt.slice(0, Number(form.maxCharacters || 10000)) });
     setText(`Narrativa preparada para voz:\n\n${form.prompt}`);
   };
+  const generateOmnivoice = async () => {
+    if (!form.prompt.trim()) return actions.notify("Escribe o pega la narrativa antes de generar voz.");
+    const safePrompt = form.prompt.slice(0, Number(form.maxCharacters || 10000));
+    setOmniBusy(true);
+    setOmniResult(null);
+    try {
+      const result = await apiRequest("/api/omnivoice/speech", {
+        method: "POST",
+        body: JSON.stringify({
+          text: safePrompt,
+          voice_id: form.voiceModel,
+          format: form.format || "wav",
+          speed: 1
+        })
+      });
+      setText(`Narrativa enviada a OmniVoice:\n\n${safePrompt}`);
+      setOmniResult(result);
+      actions.notify("Voz generada con OmniVoice.");
+    } catch (error) {
+      actions.notify(error.message);
+      setOmniResult({ ok: false, message: error.message });
+    } finally {
+      setOmniBusy(false);
+    }
+  };
   return (
     <div className="layout-2">
       <section className="card form narrative-form">
         <h1>NARRATIVA Y VOZ</h1>
-        <p className="muted">Generador de narracion profesional y voz en MP3 con modelos MuAPI compatibles.</p>
+        <p className="muted">Generador de narracion profesional con OmniVoice local/remoto y modelos MuAPI compatibles.</p>
+        <div className="omnivoice-panel">
+          <div>
+            <strong>OmniVoice Studio</strong>
+            <p className="muted">{omniStatus?.connected ? "Motor conectado." : (omniStatus?.message || "Comprobando motor OmniVoice...")}</p>
+          </div>
+          <span className={`status-pill ${omniStatus?.connected ? "ok" : "warn"}`}>{omniStatus?.connected ? "Activo" : "Requiere backend"}</span>
+        </div>
+        <div className="field">
+          <label>Voz principal OmniVoice</label>
+          <select className="select" value={form.voiceModel} onChange={(event) => setForm((current) => ({ ...current, voiceModel: event.target.value }))}>
+            {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name} - {voice.engine}</option>)}
+          </select>
+        </div>
+        <div className="voice-mini-card">
+          <Waveform />
+          <div>
+            <strong>{selectedVoice.name}</strong>
+            <span>{selectedVoice.language} - {selectedVoice.engine} - seed {selectedVoice.seed}</span>
+            <p className="muted">{selectedVoice.sourceText}</p>
+          </div>
+        </div>
         <DynamicForm studio="narrative" form={form} setForm={setForm} model={getMuapiModelById(form.model)} />
-        <button className="btn" disabled={busyStudio === "narrative"} onClick={generate}><Mic2 size={18} />Generar narrativa en MP3</button>
+        <div className="toolbar">
+          <button className="btn" disabled={omniBusy} onClick={generateOmnivoice}><Mic2 size={18} />{omniBusy ? "Generando..." : "Generar con OmniVoice"}</button>
+          <button className="btn secondary" disabled={busyStudio === "narrative"} onClick={generate}><Mic2 size={18} />Generar con MuAPI</button>
+        </div>
       </section>
       <section className="card">
         <h2>Texto de trabajo</h2>
@@ -3689,6 +3752,8 @@ function NarrativeStudio({ actions, busyStudio, state }) {
       </section>
       <section className="card">
         <h2>Resultados de voz</h2>
+        {omniResult?.audio?.url && <div className="voice-result"><audio controls src={apiAssetUrl(omniResult.audio.url)} /><button className="btn secondary" onClick={() => window.open(apiAssetUrl(omniResult.audio.url), "_blank", "noopener,noreferrer")}>Abrir audio</button></div>}
+        {omniResult?.ok === false && <p className="muted">{omniResult.message}</p>}
         <NativeStudioPanel studio="narrative" state={state} actions={actions} form={form} />
       </section>
     </div>
@@ -3896,7 +3961,7 @@ function NativeOfficialContent({ id, actions, state, patch }) {
   if (id === "checklist") return <ChecklistNative actions={actions} />;
   if (id === "settings") return <SettingsNative state={state} patch={patch} actions={actions} />;
   if (id === "assets") return <LibraryNative kind="assets" actions={actions} />;
-  if (id === "voices") return <LibraryNative kind="voices" actions={actions} />;
+  if (id === "voices") return <OmnivoiceLibraryNative actions={actions} />;
   if (id === "users") return <UsersNative actions={actions} />;
   if (id === "hub") return <HubNative actions={actions} />;
   if (id === "help") return <HelpNative actions={actions} />;
@@ -3921,6 +3986,10 @@ function ApiKeysNative({ actions }) {
     }
   };
   return <div className="layout-2"><section className="card form"><h2>Proveedor seguro</h2><div className="field"><label>Proveedor</label><select className="select" value={provider} onChange={(e) => setProvider(e.target.value)}><option value="muapi">MUAPI Universal</option><option value="kling">Kling AI</option><option value="openai">OpenAI</option></select></div><p className="muted">Las API keys viven en variables de entorno del servidor. El cliente solo prueba el estado.</p><button className="btn" onClick={test}>Probar conexion</button><button className="btn secondary" onClick={() => actions.download("env-template.json", { required: ["MUAPI_API_KEY", "MUAPI_API_BASE_URL=https://api.muapi.ai"] })}>Exportar plantilla</button></section><section className="card"><h2>Estado</h2><p>{status}</p><p className="muted">Para conectar real: edita `.env` o variables del hosting y reinicia `npm run start`.</p></section></div>;
+}
+
+function OmnivoiceLibraryNative({ actions }) {
+  return <div className="voice-library"><section className="card voice-hero"><Mic2 size={42} /><div><h2>Biblioteca de voces OmniVoice</h2><p className="muted">Voces principales cargadas desde el registro CSV para narrativa, documentales y produccion audiovisual.</p></div><button className="btn" onClick={() => actions.navigate("narrative")}>Crear voz</button></section><section className="grid voice-grid">{omnivoiceVoices.map((voice) => <div className="card voice-card" key={voice.id}><Waveform /><strong>{voice.name}</strong><span>{voice.engine} - {voice.mode} - seed {voice.seed}</span><p className="muted">{voice.language} - {voice.sampleRateHz} Hz - {voice.fileName}</p><p className="muted">{voice.sourceText}</p><div className="toolbar compact"><button className="btn secondary" onClick={() => actions.modal({ title: voice.name, body: `${voice.sourceText}\n\nFamilia: ${voice.familyId}\nNota: ${voice.note}` })}>Preview</button><button className="btn secondary" onClick={() => { localStorage.setItem("nexframe-omnivoice-selected", voice.id); actions.navigate("narrative"); actions.notify(`${voice.name} seleccionada para narrativa.`); }}>Usar</button></div></div>)}</section></div>;
 }
 
 function BillingNative({ state, actions }) {

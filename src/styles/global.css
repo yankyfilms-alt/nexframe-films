@@ -1117,6 +1117,16 @@ h2 { margin: 0 0 12px; font-size: 18px; letter-spacing: .3px; }
 .voice-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); }
 .voice-card { display: grid; gap: 10px; min-height: 180px; }
 .voice-card .waveform { height: 58px; }
+.omnivoice-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: rgba(255,255,255,.04); }
+.omnivoice-panel p { margin: 4px 0 0; }
+.status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 6px 10px; border-radius: 999px; font-size: 11px; font-weight: 900; white-space: nowrap; }
+.status-pill.ok { color: #d9ffe1; background: rgba(40, 180, 94, .18); border: 1px solid rgba(40, 180, 94, .38); }
+.status-pill.warn { color: #ffe2a8; background: rgba(224, 151, 32, .16); border: 1px solid rgba(224, 151, 32, .34); }
+.voice-mini-card { display: grid; grid-template-columns: 82px 1fr; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: linear-gradient(135deg, rgba(224,32,32,.1), rgba(255,255,255,.035)); }
+.voice-mini-card span { display: block; margin-top: 3px; color: var(--gold); font-size: 12px; font-weight: 800; }
+.voice-mini-card p { margin: 7px 0 0; }
+.voice-result { display: grid; gap: 10px; margin-bottom: 12px; }
+.voice-result audio { width: 100%; }
 .editor-studio { display: grid; gap: 14px; }
 .editor-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; background: linear-gradient(90deg, rgba(16,18,22,.98), rgba(48,6,10,.44)), url("/assets/nexframe-official/pack2/panels/29_video_editor_timeline.png") center right / cover no-repeat; min-height: 128px; }
 .editor-layout { display: grid; grid-template-columns: minmax(220px, 280px) minmax(340px, 1fr) minmax(210px, 270px) minmax(240px, 310px); gap: 12px; align-items: start; }

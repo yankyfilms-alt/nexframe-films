@@ -12,6 +12,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { fileURLToPath } from "url";
 import { getModelContract, getMuapiModelById, getMuapiModelsForStudio, muapiRegistry } from "./src/data/models-registry.js";
+import { getOmnivoiceVoiceById, omnivoiceVoices } from "./src/data/omnivoice-voices.js";
 import { classifyUploads, sanitizeTextForTTS, selectAgentForStudio, validateAgentOutput } from "./src/data/agents-runtime.js";
 import { productionManifest, projectFromProduction, validateProductionRequest } from "./lib/production-engine.js";
 import { openMontageStatus } from "./lib/openmontage-bridge.js";
@@ -105,6 +106,35 @@ function readJsonFile(filename, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function omnivoiceBaseUrl() {
+  return String(process.env.OMNIVOICE_BASE_URL || "http://127.0.0.1:3900").replace(/\/+$/, "");
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function omnivoiceHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (process.env.OMNIVOICE_API_KEY) headers.Authorization = `Bearer ${process.env.OMNIVOICE_API_KEY}`;
+  return headers;
+}
+
+async function getOmnivoiceRemoteVoices() {
+  const response = await fetchWithTimeout(`${omnivoiceBaseUrl()}/v1/audio/voices`, {
+    headers: omnivoiceHeaders({ Accept: "application/json" })
+  }, 6000);
+  if (!response.ok) throw new Error(`OmniVoice respondio HTTP ${response.status}`);
+  const data = await response.json();
+  return Array.isArray(data.voices) ? data.voices : Array.isArray(data.data) ? data.data : [];
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -705,6 +735,14 @@ function applyEditorOperation(project, operation) {
     if (end <= start) throw new Error("El final debe ser posterior al inicio.");
     entry.clip.start = start;
     entry.clip.end = end;
+  } else if (operation.type === "update_clip") {
+    const entry = locate(operation.clipId);
+    if (!entry) throw new Error("Clip no encontrado.");
+    if (operation.name !== undefined) entry.clip.name = String(operation.name).trim().slice(0, 140) || entry.clip.name;
+    if (operation.start !== undefined) entry.clip.start = numeric(operation.start, "start");
+    if (operation.end !== undefined) entry.clip.end = numeric(operation.end, "end");
+    if (operation.in !== undefined) entry.clip.in = numeric(operation.in, "in");
+    if (entry.clip.end <= entry.clip.start) throw new Error("El final debe ser posterior al inicio.");
   } else if (operation.type === "move_clip") {
     const entry = locate(operation.clipId);
     const target = tracks.find((track) => track.id === operation.trackId);
@@ -735,6 +773,21 @@ function applyEditorOperation(project, operation) {
     let track = tracks.find((item) => item.type === "text");
     if (!track) { track = { id: `track_${requestId()}`, type: "text", name: "Subtitulos", clips: [] }; tracks.push(track); }
     track.clips.push({ id: `clip_${requestId()}`, type: "text", name: "Subtitulos", text: operation.text || "Subtitulos pendientes de transcripcion", start: 0, end: project.timeline.duration || 1, style: operation.style || "nexframe-default" });
+  } else if (operation.type === "create_track") {
+    const type = ["video", "audio", "image", "text"].includes(operation.trackType) ? operation.trackType : "video";
+    const fallback = type === "audio" ? "Audio" : type === "text" ? "Texto / subtitulos" : type === "image" ? "Imagen / overlay" : "Video";
+    tracks.push({ id: `track_${requestId()}`, type, name: String(operation.name || fallback).trim().slice(0, 80), clips: [], muted: false, hidden: false });
+  } else if (operation.type === "set_track_state") {
+    const track = tracks.find((item) => item.id === operation.trackId);
+    if (!track) throw new Error("Pista no encontrada.");
+    if (operation.name !== undefined) track.name = String(operation.name).trim().slice(0, 80) || track.name;
+    if (operation.muted !== undefined) track.muted = Boolean(operation.muted);
+    if (operation.hidden !== undefined) track.hidden = Boolean(operation.hidden);
+  } else if (operation.type === "remove_track") {
+    const index = tracks.findIndex((item) => item.id === operation.trackId);
+    if (index < 0) throw new Error("Pista no encontrada.");
+    if (tracks[index].clips?.length) throw new Error("La pista tiene clips. Vaciala antes de eliminarla.");
+    tracks.splice(index, 1);
   } else {
     throw new Error(`Operacion no implementada: ${operation.type}`);
   }
@@ -3294,10 +3347,10 @@ app.post("/api/editor/projects/:id/agent", requireAuth, (req, res) => {
 app.post("/api/editor/projects/:id/render", requireAuth, async (req, res) => {
   const project = editorProjectForUser(req.params.id, req.user.id);
   if (!project) return res.status(404).json({ ok: false, message: "Proyecto de editor no encontrado." });
-  const videoTrack = project.timeline.tracks.find((track) => track.type === "video" && track.clips.length);
+  const videoTrack = project.timeline.tracks.find((track) => track.type === "video" && !track.hidden && track.clips.length);
   if (!videoTrack) return res.status(400).json({ ok: false, message: "La timeline necesita al menos un clip de video." });
   const clips = [...videoTrack.clips].sort((a, b) => a.start - b.start);
-  const audioTrack = project.timeline.tracks.find((track) => track.type === "audio" && track.clips.length);
+  const audioTrack = project.timeline.tracks.find((track) => track.type === "audio" && !track.muted && track.clips.length);
   const audioClip = audioTrack ? [...audioTrack.clips].sort((a, b) => a.start - b.start)[0] : null;
   const outputName = `render_${Date.now()}_${requestId()}.mp4`;
   const outputPath = path.join(editorMediaDir(project.id), outputName);
@@ -3949,6 +4002,77 @@ app.get("/api/outputs/:id", (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).json({ ok: false, message: "Output no encontrado." });
   res.json({ ok: true, job, outputs: job.outputs });
+});
+
+app.get("/api/omnivoice/status", async (_req, res) => {
+  try {
+    await getOmnivoiceRemoteVoices();
+    res.json({ ok: true, connected: true, baseUrl: omnivoiceBaseUrl(), voices: omnivoiceVoices.length, message: "OmniVoice Studio conectado." });
+  } catch (error) {
+    res.status(200).json({
+      ok: true,
+      connected: false,
+      baseUrl: omnivoiceBaseUrl(),
+      voices: omnivoiceVoices.length,
+      message: `OmniVoice no responde en ${omnivoiceBaseUrl()}. Inicia OmniVoice Studio backend o configura OMNIVOICE_BASE_URL. Detalle: ${error.message}`
+    });
+  }
+});
+
+app.get("/api/omnivoice/voices", async (_req, res) => {
+  let remoteVoices = [];
+  try {
+    remoteVoices = await getOmnivoiceRemoteVoices();
+  } catch {
+    remoteVoices = [];
+  }
+  res.json({ ok: true, voices: omnivoiceVoices, remoteVoices, primaryVoiceId: omnivoiceVoices[0]?.id });
+});
+
+app.post("/api/omnivoice/speech", async (req, res) => {
+  const text = String(req.body?.text || req.body?.input || "").trim();
+  if (!text) return res.status(400).json({ ok: false, message: "Pega la narrativa antes de generar voz con OmniVoice." });
+  if (text.length > 10000) return res.status(400).json({ ok: false, message: "OmniVoice acepta hasta 10.000 caracteres por solicitud en este panel." });
+  const voice = getOmnivoiceVoiceById(req.body?.voice_id || req.body?.voice || "");
+  const format = ["mp3", "wav", "pcm"].includes(String(req.body?.format || "").toLowerCase()) ? String(req.body.format).toLowerCase() : "wav";
+  const requestedSpeed = Number(req.body?.speed || 1);
+  const speed = Math.min(1, Math.max(0.9, Number.isFinite(requestedSpeed) ? requestedSpeed : 1));
+  try {
+    const response = await fetchWithTimeout(`${omnivoiceBaseUrl()}/v1/audio/speech`, {
+      method: "POST",
+      headers: omnivoiceHeaders({ "Content-Type": "application/json", Accept: "audio/*" }),
+      body: JSON.stringify({
+        model: voice.engine || "omnivoice",
+        voice: voice.id,
+        input: text,
+        response_format: format,
+        speed
+      })
+    }, 120000);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      return res.status(response.status).json({ ok: false, message: `OmniVoice no pudo generar la voz: ${detail || `HTTP ${response.status}`}` });
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const outputDir = path.join(__dirname, "public", "uploads", "omnivoice");
+    fs.mkdirSync(outputDir, { recursive: true });
+    const extension = format === "pcm" ? "pcm" : format;
+    const filename = `omnivoice_${Date.now()}_${requestId()}.${extension}`;
+    const outputPath = path.join(outputDir, filename);
+    fs.writeFileSync(outputPath, buffer);
+    res.json({
+      ok: true,
+      voice,
+      audio: {
+        url: `/uploads/omnivoice/${filename}`,
+        filename,
+        mimeType: response.headers.get("content-type") || (format === "mp3" ? "audio/mpeg" : "audio/wav"),
+        bytes: buffer.length
+      }
+    });
+  } catch (error) {
+    res.status(503).json({ ok: false, message: `No se pudo conectar con OmniVoice en ${omnivoiceBaseUrl()}. Inicia OmniVoice Studio backend o configura OMNIVOICE_BASE_URL. Detalle: ${error.message}` });
+  }
 });
 
 app.use((error, _req, res, _next) => {
